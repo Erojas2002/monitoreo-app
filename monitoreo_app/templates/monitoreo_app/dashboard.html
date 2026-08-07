@@ -1,0 +1,601 @@
+<!-- monitoreo_app/templates/monitoreo_app/dashboard.html -->
+{% extends 'monitoreo_app/base.html' %}
+
+{% block content %}
+<div class="mb-6 flex justify-between items-center">
+    <h2 class="text-xl font-semibold border-b border-gray-700 pb-2">Nodos de Red</h2>
+    <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 bg-gray-800/50 px-3 py-2 rounded-lg border border-gray-700 text-sm">
+            <i class="fa-solid fa-clock text-gray-400"></i>
+            <select id="refreshRate" onchange="window.cambiarTiempoActualizacion()" class="bg-transparent text-gray-300 focus:outline-none cursor-pointer">
+                <option value="10000" class="bg-gray-800 text-white">10 Segundos</option>
+                <option value="20000" class="bg-gray-800 text-white">20 Segundos</option>
+                <option value="30000" class="bg-gray-800 text-white">30 Segundos</option>
+                <option value="60000" class="bg-gray-800 text-white" selected>1 Minuto</option>
+            </select>
+        </div>
+
+        <button onclick="window.abrirModal()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+            <i class="fa-solid fa-plus mr-1"></i> Nuevo Dispositivo
+        </button>
+        <button onclick="window.cargarNodos()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+            <i class="fa-solid fa-rotate-right mr-1"></i> Actualizar
+        </button>
+    </div>
+</div>
+
+<div id="nodos-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <!-- Las tarjetas se inyectarán aquí vía JavaScript -->
+</div>
+
+<!-- NUEVA SECCIÓN: Servicios HTTP -->
+<div class="mb-8">
+    <div class="mb-6 flex justify-between items-center">
+        <h2 class="text-xl font-semibold border-b border-gray-700 pb-2">
+            <i class="fa-solid fa-globe text-green-400 mr-2"></i>Servicios Web
+        </h2>
+        <div class="flex items-center gap-3">
+            <button onclick="window.abrirModalHTTP()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                <i class="fa-solid fa-plus mr-1"></i> Nuevo Servicio
+            </button>
+            <button onclick="window.cargarServiciosHTTP()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                <i class="fa-solid fa-rotate-right mr-1"></i> Actualizar
+            </button>
+        </div>
+    </div>
+    
+    <div id="http-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <!-- Tarjetas de servicios HTTP se inyectarán aquí -->
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar -->
+<div id="nodoModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-50">
+    <div class="glass-panel p-6 rounded-xl w-[500px] max-w-[90vw] relative">
+        <h3 id="modalTitle" class="text-xl font-bold mb-4 border-b border-gray-600 pb-2">Nuevo Dispositivo</h3>
+        
+        <form id="nodoForm" onsubmit="window.guardarNodo(event)">
+            <input type="hidden" id="nodoId">
+            
+            <div class="mb-3">
+                <label class="block text-sm text-gray-400 mb-1">Nombre</label>
+                <input type="text" id="nodoName" required class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+            </div>
+            
+            <div class="mb-3">
+                <label class="block text-sm text-gray-400 mb-1">Dirección IP</label>
+                <input type="text" id="nodoIp" required class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm text-gray-400 mb-1">Tipo de Dispositivo</label>
+                <select id="nodoType" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                    <option value="ROUTER">Router</option>
+                    <option value="SWITCH">Switch</option>
+                    <option value="NVR">NVR / DVR</option>
+                    <option value="CAMERA">Cámara IP</option>
+                    <option value="SERVER">Servidor Físico</option>
+                    <option value="OTHER">Otro</option>
+                </select>
+            </div>
+
+            <div class="mb-4 flex items-center">
+                <input type="checkbox" id="nodoMonitored" checked class="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500">
+                <label class="ml-2 text-sm text-gray-400">Habilitar monitoreo activo</label>
+            </div>
+
+            <!-- SECCIÓN SNMP ELIMINADA COMPLETAMENTE -->
+
+            <div class="flex justify-end gap-2 mt-6">
+                <button type="button" onclick="window.cerrarModal()" class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded text-sm transition-colors">Cancelar</button>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm transition-colors">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Nuevo Modal para Servicios HTTP -->
+<div id="httpModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-50">
+    <div class="glass-panel p-6 rounded-xl w-[500px] max-w-[90vw] relative">
+        <h3 id="httpModalTitle" class="text-xl font-bold mb-4 border-b border-gray-600 pb-2">Nuevo Servicio Web</h3>
+        
+        <form id="httpForm" onsubmit="window.guardarServicioHTTP(event)">
+            <input type="hidden" id="httpId">
+            
+            <div class="mb-3">
+                <label class="block text-sm text-gray-400 mb-1">Nombre del Servicio</label>
+                <input type="text" id="httpName" required class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+            </div>
+            
+            <div class="mb-3">
+                <label class="block text-sm text-gray-400 mb-1">URL (ej. https://google.com)</label>
+                <input type="url" id="httpUrl" required class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+            </div>
+            
+            <div class="mb-3">
+                <label class="block text-sm text-gray-400 mb-1">Código HTTP Esperado</label>
+                <input type="number" id="httpExpectedStatus" value="200" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm text-gray-400 mb-1">Timeout (segundos)</label>
+                <input type="number" id="httpTimeout" value="5" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+            </div>
+            
+            <div class="mb-4 flex items-center">
+                <input type="checkbox" id="httpCheckSSL" checked class="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500">
+                <label class="ml-2 text-sm text-gray-400">Verificar certificado SSL</label>
+            </div>
+
+            <div class="flex justify-end gap-2 mt-6">
+                <button type="button" onclick="window.cerrarModalHTTP()" class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded text-sm transition-colors">Cancelar</button>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm transition-colors">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Estadísticas / Gráficas -->
+<div id="graficasModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden justify-center items-center z-50">
+    <div id="graficasContent" class="glass-panel p-8 rounded-2xl w-11/12 max-w-7xl relative border-t-2 border-blue-500/30 shadow-[0_0_40px_rgba(56,189,248,0.15)]">
+        
+        <div class="flex justify-between items-center mb-6 border-b border-gray-600/50 pb-4">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-chart-area text-blue-400 text-2xl"></i>
+                <h3 id="graficasTitle" class="text-2xl font-bold text-gray-100">Estadísticas de Red</h3>
+            </div>
+            <button onclick="window.cerrarGraficas()" class="text-gray-400 hover:text-red-400 bg-gray-800/50 hover:bg-gray-800 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+        
+        <!-- SOLO UNA GRÁFICA (Latencia) -->
+        <div class="flex flex-col gap-8 w-full h-[65vh] overflow-y-auto pr-2 custom-scrollbar">
+            <div class="h-96 shrink-0">
+                <h4 class="text-xs text-gray-400 mb-2 font-semibold tracking-widest uppercase">Calidad de Conexión (Ping)</h4>
+                <canvas id="latenciaChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const apiUrl = '/api/nodes/';
+    const contenedor = document.getElementById('nodos-container');
+    const modal = document.getElementById('nodoModal');
+    const form = document.getElementById('nodoForm');
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    window.obtenerIcono = function(tipo) {
+        const iconos = {
+            'ROUTER': 'fa-route text-blue-400',
+            'SWITCH': 'fa-server text-purple-400',
+            'NVR': 'fa-video text-orange-400',
+            'CAMERA': 'fa-camera text-orange-300',
+            'SERVER': 'fa-database text-teal-400'
+        };
+        return iconos[tipo] || 'fa-desktop text-gray-400';
+    };
+
+    window.obtenerColorEstado = function(estado) {
+        if (estado === 'UP') return 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]';
+        if (estado === 'DOWN') return 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]';
+        if (estado === 'WARN') return 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]';
+        return 'bg-gray-500';
+    };
+
+    window.cargarNodos = async function() {
+        try {
+            const respuesta = await fetch(apiUrl);
+            const nodos = await respuesta.json();
+            window.renderizarNodos(nodos);
+        } catch (error) {
+            console.error("Error al cargar los nodos:", error);
+        }
+    };
+
+    window.renderizarNodos = function(nodos) {
+        contenedor.innerHTML = '';
+        nodos.forEach(nodo => {
+            const icono = window.obtenerIcono(nodo.device_type);
+            const colorEstado = window.obtenerColorEstado(nodo.status);
+            const ultimaLatencia = nodo.recent_latency.length > 0 ? `${nodo.recent_latency[0].latency_ms} ms` : 'N/A';
+            const safeName = nodo.name.replace(/'/g, "\\'");
+            
+            const cardHTML = `
+                <div class="nodo-card glass-panel rounded-xl p-5 hover:border-blue-500 transition-colors relative group">
+                    <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="window.abrirGraficas('${nodo.id}', '${safeName}')" class="text-gray-400 hover:text-green-400 p-1"><i class="fa-solid fa-chart-line text-sm"></i></button>
+                        <button onclick="window.abrirModal('${nodo.id}', '${safeName}', '${nodo.ip_address}', '${nodo.device_type}', ${nodo.is_monitored})" class="text-gray-400 hover:text-blue-400 p-1"><i class="fa-solid fa-pen text-sm"></i></button>
+                        <button onclick="window.eliminarNodo(${nodo.id}, '${safeName}')" class="text-gray-400 hover:text-red-400 p-1"><i class="fa-solid fa-trash text-sm"></i></button>
+                    </div>
+                    
+                    <div class="flex justify-between items-start mb-4 mt-2">
+                        <div class="flex items-center gap-3">
+                            <div class="p-3 bg-gray-800 rounded-lg"><i class="fa-solid ${icono} text-xl"></i></div>
+                            <div>
+                                <h3 class="font-bold text-lg leading-tight">${nodo.name}</h3>
+                                <p class="text-xs text-gray-400 font-mono">${nodo.ip_address}</p>
+                            </div>
+                        </div>
+                        <div class="h-3 w-3 rounded-full ${colorEstado}"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-4 border-t border-gray-700 pt-4">
+                        <div><p class="text-xs text-gray-400 uppercase tracking-wider">Latencia</p><p class="text-sm font-semibold">${ultimaLatencia}</p></div>
+                        <div><p class="text-xs text-gray-400 uppercase tracking-wider">Estado</p><p class="text-sm font-semibold">${nodo.status === 'UP' ? 'En línea' : 'Caído'}</p></div>
+                    </div>
+                    
+                    <div class="mt-2 pt-2 border-t border-gray-700/50">
+                        <p class="text-xs text-gray-400">Pérdida: ${nodo.recent_latency.length > 0 ? nodo.recent_latency[0].packet_loss_pct + '%' : 'N/A'}</p>
+                    </div>
+                </div>
+            `;
+            contenedor.innerHTML += cardHTML;
+        });
+        gsap.fromTo(".nodo-card", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "back.out(1.7)" });
+    };
+
+    let tiempoActualizacion = 60000;
+    let nodosInterval = null;
+    let nodoActualId = null;
+
+    window.cambiarTiempoActualizacion = function() {
+        tiempoActualizacion = parseInt(document.getElementById('refreshRate').value);
+        
+        if (nodosInterval) clearInterval(nodosInterval);
+        nodosInterval = setInterval(window.cargarNodos, tiempoActualizacion);
+        
+        if (graficasInterval && nodoActualId) {
+            clearInterval(graficasInterval);
+            graficasInterval = setInterval(() => cargarDatosGrafica(nodoActualId), tiempoActualizacion);
+        }
+    };
+
+    // --- LÓGICA DEL FORMULARIO Y MODAL ---
+    window.abrirModal = function(id = null, name = '', ip = '', type = 'OTHER', monitored = true) {
+        document.getElementById('modalTitle').innerText = id ? 'Editar Dispositivo' : 'Nuevo Dispositivo';
+        document.getElementById('nodoId').value = id || '';
+        document.getElementById('nodoName').value = name;
+        document.getElementById('nodoIp').value = ip;
+        document.getElementById('nodoType').value = type;
+        document.getElementById('nodoMonitored').checked = monitored;
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    };
+
+    window.cerrarModal = function() {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        form.reset();
+    };
+
+    window.guardarNodo = async function(event) {
+        event.preventDefault();
+        const id = document.getElementById('nodoId').value;
+        const data = {
+            name: document.getElementById('nodoName').value,
+            ip_address: document.getElementById('nodoIp').value,
+            device_type: document.getElementById('nodoType').value,
+            is_monitored: document.getElementById('nodoMonitored').checked,
+        };
+        const method = id ? 'PUT' : 'POST';
+        const endpoint = id ? `${apiUrl}${id}/` : apiUrl;
+
+        try {
+            const response = await fetch(endpoint, {
+                method: method,
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                body: JSON.stringify(data)
+            });
+            if (response.ok) {
+                window.cerrarModal();
+                window.cargarNodos();
+            } else {
+                const errorData = await response.json();
+                alert('Error al guardar: ' + JSON.stringify(errorData));
+            }
+        } catch (error) { console.error('Error:', error); }
+    };
+
+    window.eliminarNodo = async function(id, name) {
+        if (confirm(`¿Estás seguro de que deseas eliminar el dispositivo "${name}"? Todo su historial se borrará.`)) {
+            try {
+                const response = await fetch(`${apiUrl}${id}/`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRFToken': csrftoken }
+                });
+
+                if (response.ok) {
+                    window.cargarNodos();
+                }
+            } catch (error) {
+                console.error('Error al eliminar:', error);
+            }
+        }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+        window.cargarNodos();
+        nodosInterval = setInterval(window.cargarNodos, tiempoActualizacion); 
+    });
+
+    // ============================================
+    // NUEVO: Servicios HTTP
+    // ============================================
+    const httpApiUrl = '/api/http-endpoints/';
+    const httpContainer = document.getElementById('http-container');
+    const httpModal = document.getElementById('httpModal');
+    const httpForm = document.getElementById('httpForm');
+    
+    window.cargarServiciosHTTP = async function() {
+        try {
+            const respuesta = await fetch(httpApiUrl);
+            const servicios = await respuesta.json();
+            window.renderizarServiciosHTTP(servicios);
+        } catch (error) {
+            console.error("Error al cargar servicios HTTP:", error);
+        }
+    };
+    
+    window.renderizarServiciosHTTP = function(servicios) {
+        httpContainer.innerHTML = '';
+        servicios.forEach(servicio => {
+            const colorEstado = window.obtenerColorEstado(servicio.status);
+            const ultimaRespuesta = servicio.last_response_time ? `${servicio.last_response_time.toFixed(0)} ms` : 'N/A';
+            const safeName = servicio.name.replace(/'/g, "\\'");
+            
+            const cardHTML = `
+                <div class="nodo-card glass-panel rounded-xl p-5 hover:border-blue-500 transition-colors relative group">
+                    <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="window.abrirModalHTTP('${servicio.id}', '${safeName}', '${servicio.url}', ${servicio.expected_status}, ${servicio.timeout}, ${servicio.check_ssl})" 
+                                class="text-gray-400 hover:text-blue-400 p-1">
+                            <i class="fa-solid fa-pen text-sm"></i>
+                        </button>
+                        <button onclick="window.eliminarServicioHTTP(${servicio.id}, '${safeName}')" 
+                                class="text-gray-400 hover:text-red-400 p-1">
+                            <i class="fa-solid fa-trash text-sm"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="flex justify-between items-start mb-4 mt-2">
+                        <div class="flex items-center gap-3">
+                            <div class="p-3 bg-gray-800 rounded-lg">
+                                <i class="fa-solid fa-globe text-green-400 text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg leading-tight">${servicio.name}</h3>
+                                <p class="text-xs text-gray-400 font-mono truncate max-w-[150px]">${servicio.url}</p>
+                            </div>
+                        </div>
+                        <div class="h-3 w-3 rounded-full ${colorEstado}"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-4 border-t border-gray-700 pt-4">
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider">Respuesta</p>
+                            <p class="text-sm font-semibold">${ultimaRespuesta}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider">Código</p>
+                            <p class="text-sm font-semibold">${servicio.status_code || 'N/A'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-2 pt-2 border-t border-gray-700/50">
+                        <p class="text-xs text-gray-400">
+                            ${servicio.check_ssl ? '🔒 SSL Verificado' : '🔓 SSL No verificado'}
+                            ${servicio.ssl_expiry_date ? ` · Expira: ${new Date(servicio.ssl_expiry_date).toLocaleDateString()}` : ''}
+                        </p>
+                    </div>
+                </div>
+            `;
+            httpContainer.innerHTML += cardHTML;
+        });
+        gsap.fromTo(".nodo-card", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "back.out(1.7)" });
+    };
+    
+    // Modal HTTP
+    window.abrirModalHTTP = function(id = null, name = '', url = '', expected_status = 200, timeout = 5, check_ssl = true) {
+        document.getElementById('httpModalTitle').innerText = id ? 'Editar Servicio' : 'Nuevo Servicio';
+        document.getElementById('httpId').value = id || '';
+        document.getElementById('httpName').value = name;
+        document.getElementById('httpUrl').value = url;
+        document.getElementById('httpExpectedStatus').value = expected_status;
+        document.getElementById('httpTimeout').value = timeout;
+        document.getElementById('httpCheckSSL').checked = check_ssl;
+        
+        httpModal.classList.remove('hidden');
+        httpModal.classList.add('flex');
+    };
+    
+    window.cerrarModalHTTP = function() {
+        httpModal.classList.add('hidden');
+        httpModal.classList.remove('flex');
+        httpForm.reset();
+    };
+    
+    window.guardarServicioHTTP = async function(event) {
+        event.preventDefault();
+        const id = document.getElementById('httpId').value;
+        const data = {
+            name: document.getElementById('httpName').value,
+            url: document.getElementById('httpUrl').value,
+            expected_status: parseInt(document.getElementById('httpExpectedStatus').value),
+            timeout: parseInt(document.getElementById('httpTimeout').value),
+            check_ssl: document.getElementById('httpCheckSSL').checked,
+            is_active: true
+        };
+        const method = id ? 'PUT' : 'POST';
+        const endpoint = id ? `${httpApiUrl}${id}/` : httpApiUrl;
+
+        try {
+            const response = await fetch(endpoint, {
+                method: method,
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                body: JSON.stringify(data)
+            });
+            if (response.ok) {
+                window.cerrarModalHTTP();
+                window.cargarServiciosHTTP();
+            } else {
+                const errorData = await response.json();
+                alert('Error al guardar: ' + JSON.stringify(errorData));
+            }
+        } catch (error) { console.error('Error:', error); }
+    };
+    
+    window.eliminarServicioHTTP = async function(id, name) {
+        if (confirm(`¿Estás seguro de que deseas eliminar el servicio "${name}"?`)) {
+            try {
+                const response = await fetch(`${httpApiUrl}${id}/`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRFToken': csrftoken }
+                });
+
+                if (response.ok) {
+                    window.cargarServiciosHTTP();
+                }
+            } catch (error) {
+                console.error('Error al eliminar:', error);
+            }
+        }
+    };
+    
+    // Cargar todo al inicio
+    document.addEventListener("DOMContentLoaded", () => {
+        window.cargarNodos();
+        window.cargarServiciosHTTP();
+        nodosInterval = setInterval(window.cargarNodos, tiempoActualizacion);
+        setInterval(window.cargarServiciosHTTP, tiempoActualizacion);
+    });
+
+    // --- LÓGICA DE GRÁFICAS (CHART.JS) ---
+    let chartInstanciaLatencia = null;
+    let graficasInterval = null;
+    const graficasModal = document.getElementById('graficasModal');
+
+    window.abrirGraficas = async function(id, name) {
+        nodoActualId = id;
+        document.getElementById('graficasTitle').innerText = `Rendimiento: ${name}`;
+        
+        graficasModal.classList.remove('hidden');
+        graficasModal.classList.add('flex');
+
+        gsap.fromTo("#graficasContent", { scale: 0.95, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.4, ease: "power3.out" });
+
+        await cargarDatosGrafica(id);
+
+        if (graficasInterval) clearInterval(graficasInterval);
+        graficasInterval = setInterval(() => cargarDatosGrafica(id), tiempoActualizacion);
+    };
+
+    window.cerrarGraficas = function() {
+        if (graficasInterval) clearInterval(graficasInterval);
+        
+        gsap.to("#graficasContent", {
+            scale: 0.95, opacity: 0, y: 20, duration: 0.2, ease: "power3.in",
+            onComplete: () => {
+                graficasModal.classList.add('hidden');
+                graficasModal.classList.remove('flex');
+            }
+        });
+    };
+
+    async function cargarDatosGrafica(id) {
+        try {
+            const respuesta = await fetch(`${apiUrl}${id}/history/`);
+            let historial = await respuesta.json();
+            
+            historial = historial.reverse();
+
+            const etiquetas = historial.map(log => {
+                const fecha = new Date(log.timestamp);
+                return `${fecha.getHours()}:${fecha.getMinutes().toString().padStart(2, '0')}`;
+            });
+
+            dibujarGraficas(etiquetas, historial);
+
+        } catch (error) {
+            console.error("Error cargando historial", error);
+        }
+    }
+
+    function dibujarGraficas(etiquetas, datosHistorial) {
+        const ctxLatencia = document.getElementById('latenciaChart').getContext('2d');
+        
+        if (chartInstanciaLatencia) chartInstanciaLatencia.destroy();
+
+        Chart.defaults.color = '#9ca3af'; 
+        Chart.defaults.borderColor = '#334155';
+        Chart.defaults.font.family = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+
+        const gradientLatencia = ctxLatencia.createLinearGradient(0, 0, 0, 300);
+        gradientLatencia.addColorStop(0, 'rgba(56, 189, 248, 0.4)'); 
+        gradientLatencia.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+
+        const datosLatencia = datosHistorial.map(log => log.is_online ? log.latency_ms : 0);
+        const datosPerdida = datosHistorial.map(log => log.packet_loss_pct);
+
+        chartInstanciaLatencia = new Chart(ctxLatencia, {
+            type: 'line',
+            data: {
+                labels: etiquetas,
+                datasets: [
+                    {
+                        label: 'Latencia (ms)',
+                        data: datosLatencia,
+                        borderColor: '#38bdf8',
+                        backgroundColor: gradientLatencia,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        type: 'line',
+                        label: 'Pérdida (%)',
+                        data: datosPerdida,
+                        borderColor: '#ef4444',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        stepped: true,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { labels: { usePointStyle: true } } },
+                scales: {
+                    x: { grid: { drawBorder: false } },
+                    y: { type: 'linear', position: 'left', beginAtZero: true },
+                    y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, min: 0, max: 100 }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

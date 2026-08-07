@@ -1,0 +1,79 @@
+# monitoreo_app/services/telegram_service.py
+import asyncio
+import logging
+from typing import Optional
+from telegram import Bot, error
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
+
+class TelegramNotifier:
+    def __init__(self, token: Optional[str] = None, chat_id: Optional[str] = None):
+        self.token = token or getattr(settings, 'TELEGRAM_BOT_TOKEN', None)
+        self.chat_id = chat_id or getattr(settings, 'TELEGRAM_CHAT_ID', None)
+        
+        if not self.token or not self.chat_id:
+            logger.warning("Telegram no configurado: Faltan token o chat_id")
+            self.enabled = False
+        else:
+            self.bot = Bot(token=self.token)
+            self.enabled = True
+    
+    async def send_message(self, message: str, parse_mode: str = 'HTML') -> bool:
+        """Envía un mensaje asíncrono a Telegram"""
+        if not self.enabled:
+            return False
+        
+        try:
+            await self.bot.send_message(
+                chat_id=self.chat_id,
+                text=message,
+                parse_mode=parse_mode
+            )
+            logger.info(f"Mensaje Telegram enviado: {message[:50]}...")
+            return True
+        except error.TelegramError as e:
+            logger.error(f"Error enviando mensaje a Telegram: {e}")
+            return False
+    
+    async def send_alert(self, title: str, message: str, severity: str = 'info') -> bool:
+        """Envía una alerta formateada a Telegram"""
+        emojis = {
+            'critical': '🚨',
+            'warning': '⚠️',
+            'info': 'ℹ️',
+            'success': '✅'
+        }
+        
+        emoji = emojis.get(severity, 'ℹ️')
+        formatted_message = f"""
+{emoji} <b>{title}</b>
+📋 {message}
+
+🕐 {asyncio.get_event_loop().time()}
+        """
+        
+        return await self.send_message(formatted_message.strip())
+    
+    def send_sync(self, message: str, parse_mode: str = 'HTML') -> bool:
+        """Versión síncrona para usar en el código existente"""
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            return loop.run_until_complete(self.send_message(message, parse_mode))
+        except Exception as e:
+            logger.error(f"Error en send_sync: {e}")
+            return False
+    
+    def send_alert_sync(self, title: str, message: str, severity: str = 'info') -> bool:
+        """Versión síncrona de send_alert"""
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            return loop.run_until_complete(self.send_alert(title, message, severity))
+        except Exception as e:
+            logger.error(f"Error en send_alert_sync: {e}")
+            return False
+
+# Singleton para usar en toda la app
+telegram_notifier = TelegramNotifier()
