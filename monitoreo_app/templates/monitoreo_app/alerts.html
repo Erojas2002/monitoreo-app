@@ -1,0 +1,480 @@
+<!-- monitoreo_app/templates/monitoreo_app/alerts.html -->
+{% extends 'monitoreo_app/base.html' %}
+
+{% block content %}
+
+<!-- ============================================ -->
+<!-- ENCABEZADO -->
+<!-- ============================================ -->
+<div class="glass-panel rounded-2xl p-6 mb-8 border border-yellow-500/20">
+    <div class="flex flex-wrap justify-between items-center gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-white">
+                <i class="fa-solid fa-bell text-yellow-400 mr-2"></i>Historial de Alertas
+            </h2>
+            <p class="text-sm text-gray-400 mt-1">
+                Registro completo de eventos y notificaciones del sistema
+            </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+            <button onclick="window.cargarAlertas()" 
+                    class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm transition-all hover:scale-105 flex items-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> Actualizar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- FILTROS MEJORADOS -->
+<!-- ============================================ -->
+<div class="glass-panel p-5 rounded-xl mb-6 border border-gray-700/50">
+    <div class="flex items-center gap-2 mb-4">
+        <i class="fa-solid fa-sliders text-gray-400"></i>
+        <span class="text-sm font-semibold text-gray-300">Filtros</span>
+        <span class="text-xs text-gray-500 ml-2">(Aplica filtros para encontrar alertas específicas)</span>
+    </div>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Tipo de Alerta -->
+        <div>
+            <label class="block text-xs text-gray-400 mb-1.5 font-semibold uppercase tracking-wider">
+                <i class="fa-solid fa-tag mr-1"></i> Tipo
+            </label>
+            <select id="filterType" onchange="window.cargarAlertas(1)" 
+                    class="w-full bg-gray-800 text-white border border-gray-600 rounded-lg p-2.5 focus:border-yellow-500 focus:outline-none transition-colors text-sm">
+                <option value="">📋 Todos</option>
+                <option value="NODE_DOWN">🚨 Nodo Caído</option>
+                <option value="NODE_RECOVERY">✅ Nodo Recuperado</option>
+                <option value="HIGH_LATENCY">⚠️ Latencia Alta</option>
+                <option value="HTTP_DOWN">🌐 Servicio Caído</option>
+                <option value="HTTP_RECOVERY">✅ Servicio Recuperado</option>
+                <option value="HTTP_ERROR">❌ Error HTTP</option>
+                <option value="SSL_EXPIRY">🔒 SSL por Expirar</option>
+            </select>
+        </div>
+        
+        <!-- Estado -->
+        <div>
+            <label class="block text-xs text-gray-400 mb-1.5 font-semibold uppercase tracking-wider">
+                <i class="fa-solid fa-circle-check mr-1"></i> Estado
+            </label>
+            <select id="filterResolved" onchange="window.cargarAlertas(1)" 
+                    class="w-full bg-gray-800 text-white border border-gray-600 rounded-lg p-2.5 focus:border-yellow-500 focus:outline-none transition-colors text-sm">
+                <option value="">🔵 Todos</option>
+                <option value="false">🔴 Pendientes</option>
+                <option value="true">🟢 Resueltas</option>
+            </select>
+        </div>
+        
+        <!-- Fecha Desde -->
+        <div>
+            <label class="block text-xs text-gray-400 mb-1.5 font-semibold uppercase tracking-wider">
+                <i class="fa-solid fa-calendar-day mr-1"></i> Desde
+            </label>
+            <input type="date" id="filterFrom" onchange="window.cargarAlertas(1)" 
+                   class="w-full bg-gray-800 text-white border border-gray-600 rounded-lg p-2.5 focus:border-yellow-500 focus:outline-none transition-colors text-sm">
+        </div>
+        
+        <!-- Fecha Hasta -->
+        <div>
+            <label class="block text-xs text-gray-400 mb-1.5 font-semibold uppercase tracking-wider">
+                <i class="fa-solid fa-calendar-day mr-1"></i> Hasta
+            </label>
+            <input type="date" id="filterTo" onchange="window.cargarAlertas(1)" 
+                   class="w-full bg-gray-800 text-white border border-gray-600 rounded-lg p-2.5 focus:border-yellow-500 focus:outline-none transition-colors text-sm">
+        </div>
+    </div>
+    
+    <!-- Botones de acción rápidos -->
+    <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-gray-700/50">
+        <button onclick="window.limpiarFiltros()" 
+                class="text-xs text-gray-400 hover:text-white px-3 py-1.5 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors">
+            <i class="fa-solid fa-eraser mr-1"></i> Limpiar filtros
+        </button>
+        <button onclick="window.filtroHoy()" 
+                class="text-xs text-blue-400 hover:text-blue-300 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-colors">
+            <i class="fa-solid fa-calendar-day mr-1"></i> Hoy
+        </button>
+        <button onclick="window.filtroSemana()" 
+                class="text-xs text-purple-400 hover:text-purple-300 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg transition-colors">
+            <i class="fa-solid fa-calendar-week mr-1"></i> Última semana
+        </button>
+        <button onclick="window.filtroMes()" 
+                class="text-xs text-green-400 hover:text-green-300 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 rounded-lg transition-colors">
+            <i class="fa-solid fa-calendar-alt mr-1"></i> Último mes
+        </button>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- ESTADÍSTICAS -->
+<!-- ============================================ -->
+<div id="stats-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+    <div class="glass-panel p-4 rounded-xl text-center border border-blue-500/20 hover:border-blue-500/40 transition-colors">
+        <p class="text-2xl font-bold text-blue-400" id="statTotal">0</p>
+        <p class="text-xs text-gray-400 mt-1">
+            <i class="fa-solid fa-database mr-1"></i> Total Alertas
+        </p>
+    </div>
+    <div class="glass-panel p-4 rounded-xl text-center border border-red-500/20 hover:border-red-500/40 transition-colors">
+        <p class="text-2xl font-bold text-red-400" id="statPending">0</p>
+        <p class="text-xs text-gray-400 mt-1">
+            <i class="fa-solid fa-clock mr-1"></i> Pendientes
+        </p>
+    </div>
+    <div class="glass-panel p-4 rounded-xl text-center border border-green-500/20 hover:border-green-500/40 transition-colors">
+        <p class="text-2xl font-bold text-green-400" id="statResolved">0</p>
+        <p class="text-xs text-gray-400 mt-1">
+            <i class="fa-solid fa-check-circle mr-1"></i> Resueltas
+        </p>
+    </div>
+    <div class="glass-panel p-4 rounded-xl text-center border border-yellow-500/20 hover:border-yellow-500/40 transition-colors">
+        <p class="text-2xl font-bold text-yellow-400" id="statRate">0%</p>
+        <p class="text-xs text-gray-400 mt-1">
+            <i class="fa-solid fa-chart-line mr-1"></i> Tasa Resolución
+        </p>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- CONTROLES DE PAGINACIÓN -->
+<!-- ============================================ -->
+<div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+    <div class="flex items-center gap-3">
+        <span class="text-sm text-gray-400">Mostrar:</span>
+        <select id="pageSize" onchange="window.cambiarTamanoPagina()" 
+                class="bg-gray-800 text-white border border-gray-600 rounded-lg p-2 focus:border-yellow-500 focus:outline-none text-sm">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+        </select>
+        <span class="text-sm text-gray-400" id="resultCount">0 resultados</span>
+    </div>
+    <div class="flex items-center gap-2" id="paginationControls">
+        <!-- Controles de paginación (JS) -->
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- LISTA DE ALERTAS -->
+<!-- ============================================ -->
+<div id="alerts-container" class="space-y-3">
+    <!-- Alertas (JS) -->
+</div>
+
+<!-- ============================================ -->
+<!-- PAGINACIÓN INFERIOR -->
+<!-- ============================================ -->
+<div class="flex justify-center mt-6" id="paginationBottom">
+    <!-- Controles de paginación (JS) -->
+</div>
+
+{% endblock %}
+
+<!-- ============================================ -->
+<!-- SCRIPTS -->
+<!-- ============================================ -->
+{% block scripts %}
+<script>
+const alertsApiUrl = '/api/alerts/';
+
+// ============================================
+// ESTADO DE PAGINACIÓN
+// ============================================
+let estadoPaginacion = {
+    paginaActual: 1,
+    tamanoPagina: 20,
+    totalElementos: 0,
+    totalPaginas: 0,
+    alertasActuales: []
+};
+
+// ============================================
+// CARGAR ALERTAS CON PAGINACIÓN
+// ============================================
+window.cargarAlertas = async function(pagina = 1) {
+    try {
+        estadoPaginacion.paginaActual = pagina;
+        const pageSize = parseInt(document.getElementById('pageSize').value);
+        estadoPaginacion.tamanoPagina = pageSize;
+        
+        let url = `${alertsApiUrl}filter/?`;
+        
+        const type = document.getElementById('filterType').value;
+        if (type) url += `type=${type}&`;
+        
+        const resolved = document.getElementById('filterResolved').value;
+        if (resolved !== '') url += `resolved=${resolved}&`;
+        
+        const from = document.getElementById('filterFrom').value;
+        if (from) url += `from=${from}T00:00:00&`;
+        
+        const to = document.getElementById('filterTo').value;
+        if (to) url += `to=${to}T23:59:59&`;
+        
+        // Paginación
+        const offset = (pagina - 1) * pageSize;
+        url += `limit=${pageSize}&offset=${offset}`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        // Si la API devuelve un objeto con resultados y total
+        if (data.results) {
+            estadoPaginacion.alertasActuales = data.results;
+            estadoPaginacion.totalElementos = data.count || data.results.length;
+        } else {
+            estadoPaginacion.alertasActuales = data;
+            estadoPaginacion.totalElementos = data.length;
+        }
+        
+        estadoPaginacion.totalPaginas = Math.ceil(estadoPaginacion.totalElementos / pageSize);
+        
+        window.renderizarAlertas(estadoPaginacion.alertasActuales);
+        window.renderizarPaginacion();
+        
+        // Actualizar contador
+        document.getElementById('resultCount').textContent = 
+            `${estadoPaginacion.totalElementos} resultados`;
+        
+        // Cargar estadísticas
+        const statsResponse = await fetch(`${alertsApiUrl}stats/`);
+        const stats = await statsResponse.json();
+        window.renderizarEstadisticas(stats);
+        
+    } catch (error) {
+        console.error("Error cargando alertas:", error);
+    }
+};
+
+// ============================================
+// RENDERIZAR PAGINACIÓN
+// ============================================
+window.renderizarPaginacion = function() {
+    const { paginaActual, totalPaginas, tamanoPagina, totalElementos } = estadoPaginacion;
+    
+    if (totalPaginas <= 1) {
+        document.getElementById('paginationControls').innerHTML = '';
+        document.getElementById('paginationBottom').innerHTML = '';
+        return;
+    }
+    
+    // Generar controles de paginación
+    const generarControles = (pagina) => {
+        let html = '';
+        
+        // Botón Anterior
+        html += `
+            <button onclick="window.cargarAlertas(${pagina - 1})" 
+                    class="px-3 py-1.5 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-colors ${pagina <= 1 ? 'opacity-50 cursor-not-allowed' : ''}"
+                    ${pagina <= 1 ? 'disabled' : ''}>
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+        `;
+        
+        // Números de página
+        let startPage = Math.max(1, pagina - 2);
+        let endPage = Math.min(totalPaginas, pagina + 2);
+        
+        if (startPage > 1) {
+            html += `
+                <button onclick="window.cargarAlertas(1)" 
+                        class="px-3 py-1.5 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-colors">1</button>
+                ${startPage > 2 ? '<span class="text-gray-500 px-1">...</span>' : ''}
+            `;
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const active = i === pagina ? 'bg-yellow-600 text-white' : 'bg-gray-700 hover:bg-gray-600';
+            html += `
+                <button onclick="window.cargarAlertas(${i})" 
+                        class="px-3 py-1.5 rounded-lg text-sm ${active} transition-colors">${i}</button>
+            `;
+        }
+        
+        if (endPage < totalPaginas) {
+            html += `
+                ${endPage < totalPaginas - 1 ? '<span class="text-gray-500 px-1">...</span>' : ''}
+                <button onclick="window.cargarAlertas(${totalPaginas})" 
+                        class="px-3 py-1.5 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-colors">${totalPaginas}</button>
+            `;
+        }
+        
+        // Botón Siguiente
+        html += `
+            <button onclick="window.cargarAlertas(${pagina + 1})" 
+                    class="px-3 py-1.5 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-colors ${pagina >= totalPaginas ? 'opacity-50 cursor-not-allowed' : ''}"
+                    ${pagina >= totalPaginas ? 'disabled' : ''}>
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        `;
+        
+        return html;
+    };
+    
+    const controlesHTML = generarControles(paginaActual);
+    
+    // Agregar información adicional en la parte superior
+    document.getElementById('paginationControls').innerHTML = `
+        ${controlesHTML}
+        <span class="text-xs text-gray-500 ml-2">
+            Pág. ${paginaActual} de ${totalPaginas}
+        </span>
+    `;
+    
+    // Agregar controles en la parte inferior (simplificado)
+    document.getElementById('paginationBottom').innerHTML = `
+        <div class="flex items-center gap-2 glass-panel px-4 py-2 rounded-xl border border-gray-700/50">
+            ${controlesHTML}
+        </div>
+    `;
+};
+
+// ============================================
+// CAMBIAR TAMAÑO DE PÁGINA
+// ============================================
+window.cambiarTamanoPagina = function() {
+    window.cargarAlertas(1);
+};
+
+// ============================================
+// FILTROS RÁPIDOS
+// ============================================
+window.limpiarFiltros = function() {
+    document.getElementById('filterType').value = '';
+    document.getElementById('filterResolved').value = '';
+    document.getElementById('filterFrom').value = '';
+    document.getElementById('filterTo').value = '';
+    window.cargarAlertas(1);
+};
+
+window.filtroHoy = function() {
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('filterFrom').value = hoy;
+    document.getElementById('filterTo').value = hoy;
+    window.cargarAlertas(1);
+};
+
+window.filtroSemana = function() {
+    const hoy = new Date();
+    const semana = new Date(hoy);
+    semana.setDate(hoy.getDate() - 7);
+    document.getElementById('filterFrom').value = semana.toISOString().split('T')[0];
+    document.getElementById('filterTo').value = hoy.toISOString().split('T')[0];
+    window.cargarAlertas(1);
+};
+
+window.filtroMes = function() {
+    const hoy = new Date();
+    const mes = new Date(hoy);
+    mes.setMonth(hoy.getMonth() - 1);
+    document.getElementById('filterFrom').value = mes.toISOString().split('T')[0];
+    document.getElementById('filterTo').value = hoy.toISOString().split('T')[0];
+    window.cargarAlertas(1);
+};
+
+// ============================================
+// RENDERIZAR ESTADÍSTICAS
+// ============================================
+window.renderizarEstadisticas = function(stats) {
+    document.getElementById('statTotal').textContent = stats.total || 0;
+    document.getElementById('statPending').textContent = stats.pending || 0;
+    document.getElementById('statResolved').textContent = stats.resolved || 0;
+    document.getElementById('statRate').textContent = `${stats.resolution_rate || 0}%`;
+};
+
+// ============================================
+// RENDERIZAR ALERTAS
+// ============================================
+window.renderizarAlertas = function(alerts) {
+    const container = document.getElementById('alerts-container');
+    container.innerHTML = '';
+    
+    if (!alerts || alerts.length === 0) {
+        container.innerHTML = `
+            <div class="glass-panel p-12 rounded-xl text-center text-gray-400 border border-gray-700/50">
+                <i class="fa-solid fa-inbox text-5xl mb-4 block text-gray-600"></i>
+                <p class="text-lg font-semibold text-gray-300">No hay alertas</p>
+                <p class="text-sm mt-1">No se encontraron alertas que coincidan con los filtros seleccionados</p>
+                <button onclick="window.limpiarFiltros()" 
+                        class="mt-4 text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                    <i class="fa-solid fa-eraser mr-1"></i> Limpiar filtros
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    const typeEmojis = {
+        'NODE_DOWN': '🚨',
+        'NODE_RECOVERY': '✅',
+        'HIGH_LATENCY': '⚠️',
+        'HTTP_DOWN': '🌐',
+        'HTTP_RECOVERY': '✅',
+        'HTTP_ERROR': '❌',
+        'SSL_EXPIRY': '🔒'
+    };
+    
+    const typeColors = {
+        'NODE_DOWN': 'border-red-500/30 bg-red-500/5',
+        'NODE_RECOVERY': 'border-green-500/30 bg-green-500/5',
+        'HIGH_LATENCY': 'border-yellow-500/30 bg-yellow-500/5',
+        'HTTP_DOWN': 'border-red-500/30 bg-red-500/5',
+        'HTTP_RECOVERY': 'border-green-500/30 bg-green-500/5',
+        'HTTP_ERROR': 'border-orange-500/30 bg-orange-500/5',
+        'SSL_EXPIRY': 'border-purple-500/30 bg-purple-500/5'
+    };
+    
+    alerts.forEach(alert => {
+        const statusBadge = alert.is_resolved ? 
+            '<span class="text-xs bg-green-500/20 text-green-400 px-2.5 py-1 rounded-full border border-green-500/30">✅ Resuelta</span>' :
+            '<span class="text-xs bg-red-500/20 text-red-400 px-2.5 py-1 rounded-full border border-red-500/30">🔴 Pendiente</span>';
+        
+        const emoji = typeEmojis[alert.event_type] || '📢';
+        const borderColor = typeColors[alert.event_type] || 'border-gray-500/30 bg-gray-500/5';
+        
+        const createdDate = new Date(alert.created_at);
+        const resolvedDate = alert.resolved_at ? new Date(alert.resolved_at) : null;
+        
+        container.innerHTML += `
+            <div class="glass-panel p-4 rounded-xl border-l-4 ${borderColor} hover:border-l-6 transition-all hover:shadow-lg">
+                <div class="flex flex-col sm:flex-row justify-between items-start gap-3">
+                    <div class="flex items-start gap-3 flex-1 min-w-0">
+                        <div class="text-2xl flex-shrink-0 mt-0.5">${emoji}</div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-white">${alert.message}</p>
+                            <div class="flex flex-wrap items-center gap-3 mt-1.5">
+                                <span class="text-xs text-gray-400">
+                                    <i class="fa-regular fa-clock mr-1"></i>
+                                    ${createdDate.toLocaleString()}
+                                </span>
+                                ${resolvedDate ? `
+                                    <span class="text-xs text-green-400">
+                                        <i class="fa-regular fa-circle-check mr-1"></i>
+                                        Resuelta: ${resolvedDate.toLocaleString()}
+                                    </span>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+                        ${statusBadge}
+                        <span class="text-xs text-gray-500 bg-gray-800/50 px-2.5 py-1 rounded-full">${alert.event_type}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+};
+
+// ============================================
+// INICIALIZACIÓN
+// ============================================
+document.addEventListener("DOMContentLoaded", () => {
+    window.cargarAlertas(1);
+    setInterval(() => window.cargarAlertas(estadoPaginacion.paginaActual), 60000);
+});
+</script>
+{% endblock %}

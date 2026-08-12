@@ -49,8 +49,6 @@ class TelegramNotifier:
         formatted_message = f"""
 {emoji} <b>{title}</b>
 📋 {message}
-
-🕐 {asyncio.get_event_loop().time()}
         """
         
         return await self.send_message(formatted_message.strip())
@@ -77,3 +75,22 @@ class TelegramNotifier:
 
 # Singleton para usar en toda la app
 telegram_notifier = TelegramNotifier()
+
+# monitoreo_app/services/telegram_service.py
+from django.utils import timezone
+
+def format_datetime(dt):
+    """Formatea fecha/hora con zona horaria local"""
+    if not dt:
+        return "N/A"
+    
+    # Asegurar que la fecha tenga zona horaria
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt)
+    
+    # Formatear en hora local
+    local_dt = dt.astimezone(timezone.get_current_timezone())
+    return local_dt.strftime('%d/%m/%Y %I:%M:%S %p')
+
+# Ejemplo de uso en las alertas:
+# f"⏰ Hora caída: <b>{format_datetime(current_time)}</b>"

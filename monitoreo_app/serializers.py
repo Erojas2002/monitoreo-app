@@ -33,8 +33,12 @@ class NetworkNodeSerializer(serializers.ModelSerializer):
         model = NetworkNode
         fields = [
             'id', 'name', 'ip_address', 'device_type', 'status', 
-            'is_monitored', 'recent_latency'
+            'is_monitored', 'notify_telegram','recent_latency'
         ]
+        # is_monitored siempre será true al crear
+        extra_kwargs = {
+            'is_monitored': {'default': True},
+        }
 
     def get_recent_latency(self, obj):
         logs = obj.latency_logs.all().order_by('-timestamp')[:10]
@@ -62,49 +66,35 @@ class HTTPLogSerializer(serializers.ModelSerializer):
 
 
 class HTTPEndpointSerializer(serializers.ModelSerializer):
-    """Serializer para endpoints HTTP con información adicional"""
-    
     recent_logs = serializers.SerializerMethodField()
     status_code = serializers.SerializerMethodField()
     last_status_code = serializers.SerializerMethodField()
+    service_type_display = serializers.SerializerMethodField()
     
     class Meta:
         model = HTTPEndpoint
         fields = [
-            'id', 
-            'name', 
-            'url', 
-            'expected_status', 
-            'timeout', 
-            'check_ssl', 
-            'status', 
-            'last_response_time', 
-            'ssl_expiry_date',
-            'is_active', 
-            'created_at', 
-            'updated_at', 
-            'recent_logs',
-            'status_code',
-            'last_status_code'
+            'id', 'name', 'url', 'service_type', 'service_type_display',
+            'expected_status', 'timeout', 'check_ssl', 'status', 
+            'last_response_time', 'ssl_expiry_date',
+            'is_active', 'notify_telegram', 'created_at', 'updated_at',
+            'recent_logs', 'status_code', 'last_status_code'
         ]
         read_only_fields = [
-            'status', 
-            'last_response_time', 
-            'ssl_expiry_date',
-            'created_at', 
-            'updated_at'
+            'status', 'last_response_time', 'ssl_expiry_date',
+            'created_at', 'updated_at'
         ]
     
     def get_recent_logs(self, obj):
-        """Obtiene los últimos 10 logs del endpoint"""
         logs = obj.logs.all().order_by('-timestamp')[:10]
         return HTTPLogSerializer(logs, many=True).data
     
     def get_status_code(self, obj):
-        """Obtiene el último código de estado HTTP"""
         last_log = obj.logs.first()
         return last_log.status_code if last_log else None
     
     def get_last_status_code(self, obj):
-        """Alias para compatibilidad con el frontend"""
         return self.get_status_code(obj)
+    
+    def get_service_type_display(self, obj):
+        return obj.get_service_type_display()

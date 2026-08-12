@@ -25,19 +25,13 @@ class NetworkNode(models.Model):
     device_type = models.CharField(max_length=20, choices=DEVICE_TYPES, default='OTHER')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='UNKNOWN')
 
-    # ELIMINAMOS TODOS LOS CAMPOS SNMP
-    # snmp_enabled - ELIMINADO
-    # snmp_community - ELIMINADO
-    # snmp_port - ELIMINADO
-    # snmp_auto_discovered - ELIMINADO
-    # snmp_possible_communities - ELIMINADO
-    # snmp_available - ELIMINADO
-    # snmp_last_tested - ELIMINADO
-    # snmp_error_message - ELIMINADO
-    # snmp_interfaces_count - ELIMINADO
+    down_since = models.DateTimeField(null=True, blank=True, verbose_name="Caído desde")
+    recovered_at = models.DateTimeField(null=True, blank=True, verbose_name="Recuperado a las")
     
     # Para monitoreo y escaneo
     is_monitored = models.BooleanField(default=True, help_text="Desmarcar para ignorar en el escaneo automático")
+
+    notify_telegram = models.BooleanField(default=True, help_text="Enviar notificaciones por Telegram")
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -125,6 +119,19 @@ class AlertEvent(models.Model):
         return f"Alerta ({estado}): {self.event_type}"
 
 class HTTPEndpoint(models.Model):
+    SERVICE_TYPES = [
+        ('WEB', '🌐 Sitio Web / Aplicación Web'),
+        ('API', '🔌 API / REST API'),
+        ('NVR_CAM', '📹 NVR / Cámara IP'),
+        ('DATABASE', '🗄️ Base de Datos (Web)'),
+        ('FILE', '📁 Servidor de Archivos'),
+        ('EMAIL', '📧 Servidor de Correo'),
+        ('DNS', '🌍 Servidor DNS'),
+        ('PROXY', '🔄 Proxy / Reverse Proxy'),
+        ('LOAD_BALANCER', '⚖️ Balanceador de Carga'),
+        ('OTHER', '❓ Otro'),
+    ]
+    
     STATUS_CHOICES = [
         ('UP', 'En línea'),
         ('DOWN', 'Caído'),
@@ -134,6 +141,7 @@ class HTTPEndpoint(models.Model):
     
     name = models.CharField(max_length=150, verbose_name="Nombre del Servicio")
     url = models.URLField(verbose_name="URL del Servicio")
+    service_type = models.CharField(max_length=20, choices=SERVICE_TYPES, default='WEB', verbose_name="Tipo de Servicio")
     expected_status = models.IntegerField(default=200, verbose_name="Código HTTP esperado")
     timeout = models.IntegerField(default=5, verbose_name="Timeout (segundos)")
     check_ssl = models.BooleanField(default=True, verbose_name="Verificar SSL")
@@ -143,11 +151,18 @@ class HTTPEndpoint(models.Model):
     ssl_expiry_date = models.DateTimeField(null=True, blank=True, verbose_name="Fecha expiración SSL")
     
     is_active = models.BooleanField(default=True, verbose_name="Activo")
+    notify_telegram = models.BooleanField(default=True, verbose_name="Notificar por Telegram")
+    down_since = models.DateTimeField(null=True, blank=True, verbose_name="Caído desde")
+    recovered_at = models.DateTimeField(null=True, blank=True, verbose_name="Recuperado a las")
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return f"{self.name} ({self.url})"
+    
+    def get_service_type_display(self):
+        return dict(self.SERVICE_TYPES).get(self.service_type, self.service_type)
 
 class HTTPLog(models.Model):
     endpoint = models.ForeignKey(HTTPEndpoint, on_delete=models.CASCADE, related_name='logs')

@@ -8,7 +8,8 @@ from .views import (
     ContainerViewSet, 
     LatencyLogViewSet, 
     AlertEventViewSet,
-    HTTPEndpointViewSet
+    HTTPEndpointViewSet,
+    ReportViewSet
 )
 
 # El router de DRF crea automáticamente las URLs para los ViewSets
@@ -22,5 +23,10 @@ router.register(r'http-endpoints', HTTPEndpointViewSet)
 
 urlpatterns = [
     path('', TemplateView.as_view(template_name='monitoreo_app/dashboard.html'), name='dashboard'),
+    path('alerts/', TemplateView.as_view(template_name='monitoreo_app/alerts.html'), name='alerts'),
     path('api/', include(router.urls)),
+    path('api/reports/', include([
+        path('pdf/', ReportViewSet.as_view({'get': 'pdf'}), name='report_pdf'),
+        path('excel/', ReportViewSet.as_view({'get': 'excel'}), name='report_excel'),
+    ])),
 ]

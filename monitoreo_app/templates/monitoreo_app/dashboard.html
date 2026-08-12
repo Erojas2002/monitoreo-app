@@ -2,69 +2,172 @@
 {% extends 'monitoreo_app/base.html' %}
 
 {% block content %}
-<div class="mb-6 flex justify-between items-center">
-    <h2 class="text-xl font-semibold border-b border-gray-700 pb-2">Nodos de Red</h2>
-    <div class="flex items-center gap-3">
-        <div class="flex items-center gap-2 bg-gray-800/50 px-3 py-2 rounded-lg border border-gray-700 text-sm">
-            <i class="fa-solid fa-clock text-gray-400"></i>
-            <select id="refreshRate" onchange="window.cambiarTiempoActualizacion()" class="bg-transparent text-gray-300 focus:outline-none cursor-pointer">
-                <option value="10000" class="bg-gray-800 text-white">10 Segundos</option>
-                <option value="20000" class="bg-gray-800 text-white">20 Segundos</option>
-                <option value="30000" class="bg-gray-800 text-white">30 Segundos</option>
-                <option value="60000" class="bg-gray-800 text-white" selected>1 Minuto</option>
-            </select>
-        </div>
 
-        <button onclick="window.abrirModal()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-            <i class="fa-solid fa-plus mr-1"></i> Nuevo Dispositivo
-        </button>
-        <button onclick="window.cargarNodos()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-            <i class="fa-solid fa-rotate-right mr-1"></i> Actualizar
-        </button>
+<div class="glass-panel rounded-2xl p-6 mb-8 border border-blue-500/20">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-white">
+                <i class="fa-solid fa-gauge-high text-blue-400 mr-2"></i>Panel de Control
+            </h1>
+            <p class="text-sm text-gray-400 mt-1">
+                Monitoreo en tiempo real de tu infraestructura de red
+            </p>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 bg-gray-800/50 px-3 py-2 rounded-lg border border-gray-700">
+                <i class="fa-solid fa-clock text-gray-400"></i>
+                <select id="refreshRate" onchange="window.cambiarTiempoActualizacion()" 
+                        class="bg-transparent text-gray-300 focus:outline-none cursor-pointer text-sm">
+                    <option value="10000" class="bg-gray-800">10s</option>
+                    <option value="20000" class="bg-gray-800">20s</option>
+                    <option value="30000" class="bg-gray-800">30s</option>
+                    <option value="60000" class="bg-gray-800" selected>1m</option>
+                </select>
+            </div>
+            <span class="text-xs px-3 py-1 bg-green-500/20 text-green-400 rounded-full border border-green-500/30">
+                <i class="fa-solid fa-circle text-[6px] mr-1 align-middle"></i>
+                En vivo
+            </span>
+        </div>
     </div>
 </div>
 
-<div id="nodos-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-    <!-- Las tarjetas se inyectarán aquí vía JavaScript -->
-</div>
-
-<!-- NUEVA SECCIÓN: Servicios HTTP -->
-<div class="mb-8">
-    <div class="mb-6 flex justify-between items-center">
-        <h2 class="text-xl font-semibold border-b border-gray-700 pb-2">
-            <i class="fa-solid fa-globe text-green-400 mr-2"></i>Servicios Web
-        </h2>
+<!-- ============================================ -->
+<!-- SECCIÓN 1: NODOS DE RED -->
+<!-- ============================================ -->
+<section class="mb-10">
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
         <div class="flex items-center gap-3">
-            <button onclick="window.abrirModalHTTP()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                <i class="fa-solid fa-plus mr-1"></i> Nuevo Servicio
+            <div class="p-2 bg-blue-500/10 rounded-lg">
+                <i class="fa-solid fa-server text-blue-400 text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-semibold text-white">Nodos de Red</h2>
+                <p class="text-xs text-gray-400">Dispositivos monitoreados por ICMP</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <button onclick="window.abrirModal()" 
+                    class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm transition-all hover:scale-105">
+                <i class="fa-solid fa-plus mr-1"></i> Nuevo
             </button>
-            <button onclick="window.cargarServiciosHTTP()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+            <button onclick="window.cargarNodos()" 
+                    class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-all hover:scale-105">
                 <i class="fa-solid fa-rotate-right mr-1"></i> Actualizar
             </button>
         </div>
     </div>
-    
-    <div id="http-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <!-- Tarjetas de servicios HTTP se inyectarán aquí -->
+    <div id="nodos-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <!-- Tarjetas de nodos (JS) -->
     </div>
-</div>
+</section>
 
-<!-- Modal para Crear/Editar -->
-<div id="nodoModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-50">
-    <div class="glass-panel p-6 rounded-xl w-[500px] max-w-[90vw] relative">
+<!-- ============================================ -->
+<!-- SECCIÓN 2: SERVICIOS WEB -->
+<!-- ============================================ -->
+<section class="mb-10">
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-green-500/10 rounded-lg">
+                <i class="fa-solid fa-globe text-green-400 text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-semibold text-white">Servicios Web</h2>
+                <p class="text-xs text-gray-400">Monitoreo HTTP/HTTPS de aplicaciones</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <button onclick="window.abrirModalHTTP()" 
+                    class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm transition-all hover:scale-105">
+                <i class="fa-solid fa-plus mr-1"></i> Nuevo
+            </button>
+            <button onclick="window.cargarServiciosHTTP()" 
+                    class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-all hover:scale-105">
+                <i class="fa-solid fa-rotate-right mr-1"></i> Actualizar
+            </button>
+        </div>
+    </div>
+    <div id="http-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <!-- Tarjetas de servicios (JS) -->
+    </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECCIÓN 3: PREDICCIONES DE FALLOS -->
+<!-- ============================================ -->
+<section class="mb-10">
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-purple-500/10 rounded-lg">
+                <i class="fa-solid fa-brain text-purple-400 text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-semibold text-white">Predicciones de Fallos</h2>
+                <p class="text-xs text-gray-400">Análisis predictivo basado en patrones</p>
+            </div>
+        </div>
+        <button onclick="window.cargarPredicciones()" 
+                class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm transition-all hover:scale-105">
+            <i class="fa-solid fa-rotate-right mr-1"></i> Analizar ahora
+        </button>
+    </div>
+    <div id="predictions-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Predicciones (JS) -->
+    </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECCIÓN 4: REPORTES -->
+<!-- ============================================ -->
+<section class="mb-8">
+    <div class="glass-panel rounded-xl p-5 border border-gray-700/50">
+        <div class="flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-blue-500/10 rounded-lg">
+                    <i class="fa-solid fa-file-alt text-blue-400 text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold text-white">Reportes</h2>
+                    <p class="text-xs text-gray-400">Exporta informes en PDF o Excel</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <a href="/api/reports/pdf/" target="_blank" 
+                   class="bg-red-600 hover:bg-red-500 text-white px-5 py-2.5 rounded-lg text-sm transition-all hover:scale-105 flex items-center gap-2">
+                    <i class="fa-solid fa-file-pdf"></i> PDF
+                </a>
+                <a href="/api/reports/excel/" target="_blank" 
+                   class="bg-green-700 hover:bg-green-600 text-white px-5 py-2.5 rounded-lg text-sm transition-all hover:scale-105 flex items-center gap-2">
+                    <i class="fa-solid fa-file-excel"></i> Excel
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================ -->
+<!-- MODALES -->
+<!-- ============================================ -->
+
+<!-- MODAL: Nodos de Red -->
+<div id="nodoModal" class="fixed inset-0 bg-black/50 hidden justify-center items-center z-50">
+    <div class="glass-panel p-6 rounded-xl w-[500px] max-w-[95vw] relative">
         <h3 id="modalTitle" class="text-xl font-bold mb-4 border-b border-gray-600 pb-2">Nuevo Dispositivo</h3>
-        
         <form id="nodoForm" onsubmit="window.guardarNodo(event)">
             <input type="hidden" id="nodoId">
             
             <div class="mb-3">
                 <label class="block text-sm text-gray-400 mb-1">Nombre</label>
-                <input type="text" id="nodoName" required class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                <input type="text" id="nodoName" required 
+                       placeholder="Ej: Router Principal"
+                       class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
             </div>
             
             <div class="mb-3">
                 <label class="block text-sm text-gray-400 mb-1">Dirección IP</label>
-                <input type="text" id="nodoIp" required class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                <input type="text" id="nodoIp" required 
+                       placeholder="192.168.1.1"
+                       class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
             </div>
             
             <div class="mb-4">
@@ -79,63 +182,120 @@
                 </select>
             </div>
 
-            <div class="mb-4 flex items-center">
-                <input type="checkbox" id="nodoMonitored" checked class="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500">
-                <label class="ml-2 text-sm text-gray-400">Habilitar monitoreo activo</label>
+            <div class="mb-4 flex items-center mt-2">
+                <input type="checkbox" id="nodoNotifyTelegram" checked 
+                       class="w-4 h-4 text-yellow-500 bg-gray-800 border-gray-600 rounded focus:ring-yellow-500">
+                <label class="ml-2 text-sm text-gray-300">
+                    <i class="fa-solid fa-bell text-yellow-400 mr-1"></i>
+                    Enviar alertas por Telegram
+                </label>
             </div>
-
-            <!-- SECCIÓN SNMP ELIMINADA COMPLETAMENTE -->
+            <p class="text-xs text-gray-500 ml-6 mb-4">
+                <i class="fa-solid fa-info-circle mr-1"></i>
+                Al desactivar, seguirá monitoreando pero no recibirás notificaciones
+            </p>
 
             <div class="flex justify-end gap-2 mt-6">
-                <button type="button" onclick="window.cerrarModal()" class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded text-sm transition-colors">Cancelar</button>
-                <button type="submit" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm transition-colors">Guardar</button>
+                <button type="button" onclick="window.cerrarModal()" 
+                        class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded text-sm transition-colors">Cancelar</button>
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm transition-colors">Guardar</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Nuevo Modal para Servicios HTTP -->
-<div id="httpModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-50">
-    <div class="glass-panel p-6 rounded-xl w-[500px] max-w-[90vw] relative">
+<!-- MODAL: Servicios Web -->
+<div id="httpModal" class="fixed inset-0 bg-black/50 hidden justify-center items-center z-50">
+    <div class="glass-panel p-6 rounded-xl w-[550px] max-w-[95vw] relative">
         <h3 id="httpModalTitle" class="text-xl font-bold mb-4 border-b border-gray-600 pb-2">Nuevo Servicio Web</h3>
-        
         <form id="httpForm" onsubmit="window.guardarServicioHTTP(event)">
             <input type="hidden" id="httpId">
             
             <div class="mb-3">
                 <label class="block text-sm text-gray-400 mb-1">Nombre del Servicio</label>
-                <input type="text" id="httpName" required class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                <input type="text" id="httpName" required 
+                       placeholder="Ej: Cámara Entrada, API Principal"
+                       class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
             </div>
             
             <div class="mb-3">
-                <label class="block text-sm text-gray-400 mb-1">URL (ej. https://google.com)</label>
-                <input type="url" id="httpUrl" required class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                <label class="block text-sm text-gray-400 mb-1">URL del Servicio</label>
+                <input type="url" id="httpUrl" required 
+                       placeholder="https://google.com o http://192.168.1.100:8080"
+                       class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
             </div>
             
             <div class="mb-3">
-                <label class="block text-sm text-gray-400 mb-1">Código HTTP Esperado</label>
-                <input type="number" id="httpExpectedStatus" value="200" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                <label class="block text-sm text-gray-400 mb-1">Tipo de Servicio</label>
+                <select id="httpServiceType" 
+                        class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                    <option value="WEB">🌐 Sitio Web</option>
+                    <option value="API">🔌 API / REST API</option>
+                    <option value="NVR_CAM">📹 NVR / Cámara IP</option>
+                    <option value="DATABASE">🗄️ Base de Datos</option>
+                    <option value="FILE">📁 Servidor de Archivos</option>
+                    <option value="EMAIL">📧 Servidor de Correo</option>
+                    <option value="DNS">🌍 Servidor DNS</option>
+                    <option value="PROXY">🔄 Proxy</option>
+                    <option value="LOAD_BALANCER">⚖️ Balanceador</option>
+                    <option value="OTHER">❓ Otro</option>
+                </select>
             </div>
             
-            <div class="mb-4">
-                <label class="block text-sm text-gray-400 mb-1">Timeout (segundos)</label>
-                <input type="number" id="httpTimeout" value="5" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+            <div class="mb-3">
+                <label class="block text-sm text-gray-400 mb-1">
+                    Timeout (segundos)
+                    <span class="text-xs text-gray-500 ml-1">(tiempo máximo de espera)</span>
+                </label>
+                <input type="number" id="httpTimeout" value="5" min="1" max="30"
+                       class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none">
+                <p class="text-xs text-gray-500 mt-1">
+                    <i class="fa-solid fa-info-circle mr-1"></i>
+                    Recomendado: 5s para sitios web, 10-15s para APIs lentas
+                </p>
             </div>
             
             <div class="mb-4 flex items-center">
-                <input type="checkbox" id="httpCheckSSL" checked class="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500">
+                <input type="checkbox" id="httpCheckSSL" checked 
+                       class="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500">
                 <label class="ml-2 text-sm text-gray-400">Verificar certificado SSL</label>
             </div>
 
+            <div class="mb-4 flex items-center">
+                <input type="checkbox" id="httpNotifyTelegram" checked 
+                    class="w-4 h-4 text-yellow-500 bg-gray-800 border-gray-600 rounded focus:ring-yellow-500">
+                <label class="ml-2 text-sm text-gray-300">
+                    <i class="fa-solid fa-bell text-yellow-400 mr-1"></i>
+                    Enviar alertas por Telegram
+                </label>
+            </div>
+            <p class="text-xs text-gray-500 ml-6 mb-4">
+                <i class="fa-solid fa-info-circle mr-1"></i>
+                Al desactivar, seguirá monitoreando pero no recibirás notificaciones
+            </p>
+            
+            <div class="bg-gray-800/50 p-3 rounded-lg border border-gray-700 text-xs text-gray-400 mb-4">
+                <p class="flex items-start gap-2">
+                    <i class="fa-solid fa-info-circle text-blue-400 mt-0.5"></i>
+                    <span>
+                        <b>Código HTTP:</b> 200 (automático)<br>
+                        <b>Alertas:</b> Errores HTTP (404, 500, etc.)
+                    </span>
+                </p>
+            </div>
+
             <div class="flex justify-end gap-2 mt-6">
-                <button type="button" onclick="window.cerrarModalHTTP()" class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded text-sm transition-colors">Cancelar</button>
-                <button type="submit" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm transition-colors">Guardar</button>
+                <button type="button" onclick="window.cerrarModalHTTP()" 
+                        class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded text-sm transition-colors">Cancelar</button>
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm transition-colors">Guardar</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal de Estadísticas / Gráficas -->
+<!-- MODAL: Gráficas -->
 <div id="graficasModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden justify-center items-center z-50">
     <div id="graficasContent" class="glass-panel p-8 rounded-2xl w-11/12 max-w-7xl relative border-t-2 border-blue-500/30 shadow-[0_0_40px_rgba(56,189,248,0.15)]">
         
@@ -144,29 +304,44 @@
                 <i class="fa-solid fa-chart-area text-blue-400 text-2xl"></i>
                 <h3 id="graficasTitle" class="text-2xl font-bold text-gray-100">Estadísticas de Red</h3>
             </div>
-            <button onclick="window.cerrarGraficas()" class="text-gray-400 hover:text-red-400 bg-gray-800/50 hover:bg-gray-800 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
+            <button onclick="window.cerrarGraficas()" 
+                    class="text-gray-400 hover:text-red-400 bg-gray-800/50 hover:bg-gray-800 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
         </div>
         
-        <!-- SOLO UNA GRÁFICA (Latencia) -->
         <div class="flex flex-col gap-8 w-full h-[65vh] overflow-y-auto pr-2 custom-scrollbar">
+            <!-- Gráfica 1: Latencia -->
             <div class="h-96 shrink-0">
                 <h4 class="text-xs text-gray-400 mb-2 font-semibold tracking-widest uppercase">Calidad de Conexión (Ping)</h4>
                 <canvas id="latenciaChart"></canvas>
             </div>
+            <!-- Gráfica 2: Uptime -->
+            <div class="h-64 shrink-0">
+                <h4 class="text-xs text-gray-400 mb-2 font-semibold tracking-widest uppercase">Disponibilidad (Uptime)</h4>
+                <canvas id="uptimeChart"></canvas>
+            </div>
         </div>
     </div>
 </div>
+
 {% endblock %}
 
+<!-- ============================================ -->
+<!-- SCRIPTS -->
+<!-- ============================================ -->
 {% block scripts %}
 <script>
+    // ============================================
+    // CONFIGURACIÓN GLOBAL
+    // ============================================
     const apiUrl = '/api/nodes/';
-    const contenedor = document.getElementById('nodos-container');
-    const modal = document.getElementById('nodoModal');
-    const form = document.getElementById('nodoForm');
+    const httpApiUrl = '/api/http-endpoints/';
+    let tiempoActualizacion = 60000;
+    let nodosInterval = null;
+    let nodoActualId = null;
 
+    // CSRF Token
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -183,6 +358,9 @@
     }
     const csrftoken = getCookie('csrftoken');
 
+    // ============================================
+    // UTILIDADES
+    // ============================================
     window.obtenerIcono = function(tipo) {
         const iconos = {
             'ROUTER': 'fa-route text-blue-400',
@@ -201,35 +379,55 @@
         return 'bg-gray-500';
     };
 
+    // ============================================
+    // NODOS DE RED
+    // ============================================
     window.cargarNodos = async function() {
         try {
             const respuesta = await fetch(apiUrl);
             const nodos = await respuesta.json();
             window.renderizarNodos(nodos);
         } catch (error) {
-            console.error("Error al cargar los nodos:", error);
+            console.error("Error al cargar nodos:", error);
         }
     };
 
     window.renderizarNodos = function(nodos) {
-        contenedor.innerHTML = '';
+        const container = document.getElementById('nodos-container');
+        container.innerHTML = '';
+        
         nodos.forEach(nodo => {
             const icono = window.obtenerIcono(nodo.device_type);
             const colorEstado = window.obtenerColorEstado(nodo.status);
-            const ultimaLatencia = nodo.recent_latency.length > 0 ? `${nodo.recent_latency[0].latency_ms} ms` : 'N/A';
+            const ultimaLatencia = nodo.recent_latency.length > 0 ? 
+                `${nodo.recent_latency[0].latency_ms} ms` : 'N/A';
             const safeName = nodo.name.replace(/'/g, "\\'");
+            const notificacionIcon = nodo.notify_telegram ? '🔔' : '🔕';
+            const notificacionText = nodo.notify_telegram ? 'Notificaciones activas' : 'Notificaciones desactivadas';
+            const notificacionColor = nodo.notify_telegram ? 'text-green-400' : 'text-gray-500';
             
-            const cardHTML = `
-                <div class="nodo-card glass-panel rounded-xl p-5 hover:border-blue-500 transition-colors relative group">
+            container.innerHTML += `
+                <div class="glass-panel rounded-xl p-5 hover:border-blue-500 transition-colors relative group">
                     <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onclick="window.abrirGraficas('${nodo.id}', '${safeName}')" class="text-gray-400 hover:text-green-400 p-1"><i class="fa-solid fa-chart-line text-sm"></i></button>
-                        <button onclick="window.abrirModal('${nodo.id}', '${safeName}', '${nodo.ip_address}', '${nodo.device_type}', ${nodo.is_monitored})" class="text-gray-400 hover:text-blue-400 p-1"><i class="fa-solid fa-pen text-sm"></i></button>
-                        <button onclick="window.eliminarNodo(${nodo.id}, '${safeName}')" class="text-gray-400 hover:text-red-400 p-1"><i class="fa-solid fa-trash text-sm"></i></button>
+                        <button onclick="window.abrirGraficas('${nodo.id}', '${safeName}')" 
+                                class="text-gray-400 hover:text-green-400 p-1">
+                            <i class="fa-solid fa-chart-line text-sm"></i>
+                        </button>
+                        <button onclick="window.abrirModal('${nodo.id}', '${safeName}', '${nodo.ip_address}', '${nodo.device_type}', ${nodo.notify_telegram})" 
+                                class="text-gray-400 hover:text-blue-400 p-1">
+                            <i class="fa-solid fa-pen text-sm"></i>
+                        </button>
+                        <button onclick="window.eliminarNodo(${nodo.id}, '${safeName}')" 
+                                class="text-gray-400 hover:text-red-400 p-1">
+                            <i class="fa-solid fa-trash text-sm"></i>
+                        </button>
                     </div>
                     
                     <div class="flex justify-between items-start mb-4 mt-2">
                         <div class="flex items-center gap-3">
-                            <div class="p-3 bg-gray-800 rounded-lg"><i class="fa-solid ${icono} text-xl"></i></div>
+                            <div class="p-3 bg-gray-800 rounded-lg">
+                                <i class="fa-solid ${icono} text-xl"></i>
+                            </div>
                             <div>
                                 <h3 class="font-bold text-lg leading-tight">${nodo.name}</h3>
                                 <p class="text-xs text-gray-400 font-mono">${nodo.ip_address}</p>
@@ -239,113 +437,37 @@
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4 mt-4 border-t border-gray-700 pt-4">
-                        <div><p class="text-xs text-gray-400 uppercase tracking-wider">Latencia</p><p class="text-sm font-semibold">${ultimaLatencia}</p></div>
-                        <div><p class="text-xs text-gray-400 uppercase tracking-wider">Estado</p><p class="text-sm font-semibold">${nodo.status === 'UP' ? 'En línea' : 'Caído'}</p></div>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider">Latencia</p>
+                            <p class="text-sm font-semibold">${ultimaLatencia}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider">Estado</p>
+                            <p class="text-sm font-semibold">${nodo.status === 'UP' ? 'En línea' : 'Caído'}</p>
+                        </div>
                     </div>
                     
-                    <div class="mt-2 pt-2 border-t border-gray-700/50">
-                        <p class="text-xs text-gray-400">Pérdida: ${nodo.recent_latency.length > 0 ? nodo.recent_latency[0].packet_loss_pct + '%' : 'N/A'}</p>
+                    <div class="mt-2 pt-2 border-t border-gray-700/50 flex justify-between items-center">
+                        <p class="text-xs text-gray-400">
+                            Pérdida: ${nodo.recent_latency.length > 0 ? nodo.recent_latency[0].packet_loss_pct + '%' : 'N/A'}
+                        </p>
+                        <p class="text-xs ${notificacionColor}">
+                            ${notificacionIcon} ${notificacionText}
+                        </p>
                     </div>
                 </div>
             `;
-            contenedor.innerHTML += cardHTML;
         });
-        gsap.fromTo(".nodo-card", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "back.out(1.7)" });
-    };
-
-    let tiempoActualizacion = 60000;
-    let nodosInterval = null;
-    let nodoActualId = null;
-
-    window.cambiarTiempoActualizacion = function() {
-        tiempoActualizacion = parseInt(document.getElementById('refreshRate').value);
         
-        if (nodosInterval) clearInterval(nodosInterval);
-        nodosInterval = setInterval(window.cargarNodos, tiempoActualizacion);
-        
-        if (graficasInterval && nodoActualId) {
-            clearInterval(graficasInterval);
-            graficasInterval = setInterval(() => cargarDatosGrafica(nodoActualId), tiempoActualizacion);
-        }
+        gsap.fromTo(".glass-panel", 
+            { y: 30, opacity: 0 }, 
+            { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "back.out(1.7)" }
+        );
     };
-
-    // --- LÓGICA DEL FORMULARIO Y MODAL ---
-    window.abrirModal = function(id = null, name = '', ip = '', type = 'OTHER', monitored = true) {
-        document.getElementById('modalTitle').innerText = id ? 'Editar Dispositivo' : 'Nuevo Dispositivo';
-        document.getElementById('nodoId').value = id || '';
-        document.getElementById('nodoName').value = name;
-        document.getElementById('nodoIp').value = ip;
-        document.getElementById('nodoType').value = type;
-        document.getElementById('nodoMonitored').checked = monitored;
-        
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    };
-
-    window.cerrarModal = function() {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        form.reset();
-    };
-
-    window.guardarNodo = async function(event) {
-        event.preventDefault();
-        const id = document.getElementById('nodoId').value;
-        const data = {
-            name: document.getElementById('nodoName').value,
-            ip_address: document.getElementById('nodoIp').value,
-            device_type: document.getElementById('nodoType').value,
-            is_monitored: document.getElementById('nodoMonitored').checked,
-        };
-        const method = id ? 'PUT' : 'POST';
-        const endpoint = id ? `${apiUrl}${id}/` : apiUrl;
-
-        try {
-            const response = await fetch(endpoint, {
-                method: method,
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
-                body: JSON.stringify(data)
-            });
-            if (response.ok) {
-                window.cerrarModal();
-                window.cargarNodos();
-            } else {
-                const errorData = await response.json();
-                alert('Error al guardar: ' + JSON.stringify(errorData));
-            }
-        } catch (error) { console.error('Error:', error); }
-    };
-
-    window.eliminarNodo = async function(id, name) {
-        if (confirm(`¿Estás seguro de que deseas eliminar el dispositivo "${name}"? Todo su historial se borrará.`)) {
-            try {
-                const response = await fetch(`${apiUrl}${id}/`, {
-                    method: 'DELETE',
-                    headers: { 'X-CSRFToken': csrftoken }
-                });
-
-                if (response.ok) {
-                    window.cargarNodos();
-                }
-            } catch (error) {
-                console.error('Error al eliminar:', error);
-            }
-        }
-    };
-
-    document.addEventListener("DOMContentLoaded", () => {
-        window.cargarNodos();
-        nodosInterval = setInterval(window.cargarNodos, tiempoActualizacion); 
-    });
 
     // ============================================
-    // NUEVO: Servicios HTTP
+    // SERVICIOS WEB
     // ============================================
-    const httpApiUrl = '/api/http-endpoints/';
-    const httpContainer = document.getElementById('http-container');
-    const httpModal = document.getElementById('httpModal');
-    const httpForm = document.getElementById('httpForm');
-    
     window.cargarServiciosHTTP = async function() {
         try {
             const respuesta = await fetch(httpApiUrl);
@@ -355,18 +477,39 @@
             console.error("Error al cargar servicios HTTP:", error);
         }
     };
-    
+
     window.renderizarServiciosHTTP = function(servicios) {
-        httpContainer.innerHTML = '';
+        const container = document.getElementById('http-container');
+        container.innerHTML = '';
+        
+        const serviceIcons = {
+            'WEB': 'fa-globe text-blue-400',
+            'API': 'fa-plug text-purple-400',
+            'NVR_CAM': 'fa-video text-orange-400',
+            'DATABASE': 'fa-database text-teal-400',
+            'FILE': 'fa-folder-open text-indigo-400',
+            'EMAIL': 'fa-envelope text-pink-400',
+            'DNS': 'fa-globe text-cyan-400',
+            'PROXY': 'fa-random text-gray-400',
+            'LOAD_BALANCER': 'fa-balance-scale text-blue-400',
+            'OTHER': 'fa-cube text-gray-400'
+        };
+        
         servicios.forEach(servicio => {
             const colorEstado = window.obtenerColorEstado(servicio.status);
-            const ultimaRespuesta = servicio.last_response_time ? `${servicio.last_response_time.toFixed(0)} ms` : 'N/A';
+            const ultimaRespuesta = servicio.last_response_time ? 
+                `${servicio.last_response_time.toFixed(0)} ms` : 'N/A';
             const safeName = servicio.name.replace(/'/g, "\\'");
+            const iconClass = serviceIcons[servicio.service_type] || 'fa-cube text-gray-400';
+            const serviceTypeLabel = servicio.service_type_display || servicio.service_type || 'Otro';
+            const notificacionIcon = servicio.notify_telegram ? '🔔' : '🔕';
+            const notificacionText = servicio.notify_telegram ? 'Notificaciones activas' : 'Notificaciones desactivadas';
+            const notificacionColor = servicio.notify_telegram ? 'text-green-400' : 'text-gray-500';
             
-            const cardHTML = `
-                <div class="nodo-card glass-panel rounded-xl p-5 hover:border-blue-500 transition-colors relative group">
+            container.innerHTML += `
+                <div class="glass-panel rounded-xl p-5 hover:border-blue-500 transition-colors relative group">
                     <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onclick="window.abrirModalHTTP('${servicio.id}', '${safeName}', '${servicio.url}', ${servicio.expected_status}, ${servicio.timeout}, ${servicio.check_ssl})" 
+                        <button onclick="window.abrirModalHTTP('${servicio.id}', '${safeName}', '${servicio.url}', '${servicio.service_type}', ${servicio.timeout || 5}, ${servicio.check_ssl}, ${servicio.notify_telegram})" 
                                 class="text-gray-400 hover:text-blue-400 p-1">
                             <i class="fa-solid fa-pen text-sm"></i>
                         </button>
@@ -379,11 +522,14 @@
                     <div class="flex justify-between items-start mb-4 mt-2">
                         <div class="flex items-center gap-3">
                             <div class="p-3 bg-gray-800 rounded-lg">
-                                <i class="fa-solid fa-globe text-green-400 text-xl"></i>
+                                <i class="fa-solid ${iconClass} text-xl"></i>
                             </div>
                             <div>
                                 <h3 class="font-bold text-lg leading-tight">${servicio.name}</h3>
                                 <p class="text-xs text-gray-400 font-mono truncate max-w-[150px]">${servicio.url}</p>
+                                <p class="text-xs text-gray-500 mt-0.5">
+                                    <span class="px-2 py-0.5 bg-gray-700/50 rounded-full">${serviceTypeLabel}</span>
+                                </p>
                             </div>
                         </div>
                         <div class="h-3 w-3 rounded-full ${colorEstado}"></div>
@@ -400,50 +546,229 @@
                         </div>
                     </div>
                     
-                    <div class="mt-2 pt-2 border-t border-gray-700/50">
+                    <div class="mt-2 pt-2 border-t border-gray-700/50 flex justify-between items-center">
                         <p class="text-xs text-gray-400">
                             ${servicio.check_ssl ? '🔒 SSL Verificado' : '🔓 SSL No verificado'}
                             ${servicio.ssl_expiry_date ? ` · Expira: ${new Date(servicio.ssl_expiry_date).toLocaleDateString()}` : ''}
                         </p>
+                        <p class="text-xs ${notificacionColor}">
+                            ${notificacionIcon} ${notificacionText}
+                        </p>
                     </div>
                 </div>
             `;
-            httpContainer.innerHTML += cardHTML;
         });
-        gsap.fromTo(".nodo-card", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "back.out(1.7)" });
+        
+        gsap.fromTo(".glass-panel", 
+            { y: 30, opacity: 0 }, 
+            { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "back.out(1.7)" }
+        );
     };
-    
-    // Modal HTTP
-    window.abrirModalHTTP = function(id = null, name = '', url = '', expected_status = 200, timeout = 5, check_ssl = true) {
-        document.getElementById('httpModalTitle').innerText = id ? 'Editar Servicio' : 'Nuevo Servicio';
+
+    // ============================================
+    // PREDICCIONES
+    // ============================================
+    window.cargarPredicciones = async function() {
+        try {
+            const response = await fetch('/api/nodes/predictions/');
+            const predictions = await response.json();
+            window.renderizarPredicciones(predictions);
+        } catch (error) {
+            console.error("Error cargando predicciones:", error);
+        }
+    };
+
+    window.renderizarPredicciones = function(predictions) {
+        const container = document.getElementById('predictions-container');
+        container.innerHTML = '';
+        
+        if (predictions.length === 0) {
+            container.innerHTML = `
+                <div class="glass-panel p-6 rounded-xl col-span-2 text-center text-gray-400">
+                    <i class="fa-solid fa-check-circle text-3xl mb-2 block text-green-400"></i>
+                    <p>✅ No se detectaron posibles fallos</p>
+                    <p class="text-xs mt-1">Todos los nodos parecen estar estables</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const severityColors = {
+            'critical': 'border-red-500 bg-red-500/10',
+            'warning': 'border-yellow-500 bg-yellow-500/10',
+            'info': 'border-blue-500 bg-blue-500/10'
+        };
+        const severityIcons = {
+            'critical': '🚨',
+            'warning': '⚠️',
+            'info': 'ℹ️'
+        };
+        
+        predictions.forEach(pred => {
+            container.innerHTML += `
+                <div class="glass-panel p-4 rounded-xl border-l-4 ${severityColors[pred.severity] || 'border-gray-500'}">
+                    <div class="flex items-start gap-3">
+                        <div class="text-2xl">${severityIcons[pred.severity] || '📢'}</div>
+                        <div class="flex-1">
+                            <p class="font-semibold text-sm">${pred.node.name}</p>
+                            <p class="text-sm">${pred.message}</p>
+                            <p class="text-xs text-gray-400 mt-1">${pred.detail}</p>
+                            <div class="mt-2 flex gap-2">
+                                <span class="text-xs px-2 py-0.5 bg-gray-700/50 rounded-full">${pred.type}</span>
+                                <span class="text-xs px-2 py-0.5 ${pred.severity === 'critical' ? 'bg-red-500/20 text-red-400' : pred.severity === 'warning' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-blue-500/20 text-blue-400'} rounded-full">
+                                    ${pred.severity.toUpperCase()}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    };
+
+    // ============================================
+    // MODALES - NODOS
+    // ============================================
+    const modal = document.getElementById('nodoModal');
+    const form = document.getElementById('nodoForm');
+
+    window.abrirModal = function(id = null, name = '', ip = '', type = 'OTHER', notify_telegram = true) {
+        pausarActualizaciones(); // Pausar actualizaciones al abrir modal
+        
+        document.getElementById('modalTitle').innerText = id ? 'Editar Dispositivo' : 'Nuevo Dispositivo';
+        document.getElementById('nodoId').value = id || '';
+        document.getElementById('nodoName').value = name;
+        document.getElementById('nodoIp').value = ip;
+        document.getElementById('nodoType').value = type;
+        document.getElementById('nodoNotifyTelegram').checked = notify_telegram;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        gsap.fromTo(modal.querySelector('.glass-panel'), 
+            { scale: 0.9, opacity: 0, y: 30 }, 
+            { scale: 1, opacity: 1, y: 0, duration: 0.3, ease: "back.out(1.7)" }
+        );
+    };
+
+    window.cerrarModal = function() {
+        gsap.to(modal.querySelector('.glass-panel'), {
+            scale: 0.9,
+            opacity: 0,
+            y: 30,
+            duration: 0.2,
+            ease: "power3.in",
+            onComplete: () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                form.reset();
+                reanudarActualizaciones(); // Reanudar al cerrar
+            }
+        });
+    };
+
+    window.guardarNodo = async function(event) {
+        event.preventDefault();
+        const id = document.getElementById('nodoId').value;
+        const data = {
+            name: document.getElementById('nodoName').value,
+            ip_address: document.getElementById('nodoIp').value,
+            device_type: document.getElementById('nodoType').value,
+            is_monitored: true,
+            notify_telegram: document.getElementById('nodoNotifyTelegram').checked,
+        };
+        
+        const method = id ? 'PUT' : 'POST';
+        const endpoint = id ? `${apiUrl}${id}/` : apiUrl;
+
+        try {
+            const response = await fetch(endpoint, {
+                method: method,
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                body: JSON.stringify(data)
+            });
+            if (response.ok) {
+                window.cerrarModal();
+                window.cargarNodos();
+            } else {
+                const errorData = await response.json();
+                alert('Error al guardar: ' + JSON.stringify(errorData));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al guardar el dispositivo');
+        }
+    };
+
+    window.eliminarNodo = async function(id, name) {
+        if (confirm(`¿Eliminar "${name}"? Todo su historial se borrará.`)) {
+            try {
+                const response = await fetch(`${apiUrl}${id}/`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRFToken': csrftoken }
+                });
+                if (response.ok) window.cargarNodos();
+            } catch (error) {
+                console.error('Error al eliminar:', error);
+            }
+        }
+    };
+
+    // ============================================
+    // MODALES - SERVICIOS HTTP
+    // ============================================
+    const httpModal = document.getElementById('httpModal');
+    const httpForm = document.getElementById('httpForm');
+
+    window.abrirModalHTTP = function(id = null, name = '', url = '', service_type = 'WEB', timeout = 5, check_ssl = true, notify_telegram = true) {
+        pausarActualizaciones(); // Pausar actualizaciones al abrir modal
+        
+        document.getElementById('httpModalTitle').innerText = id ? 'Editar Servicio' : 'Nuevo Servicio Web';
         document.getElementById('httpId').value = id || '';
         document.getElementById('httpName').value = name;
         document.getElementById('httpUrl').value = url;
-        document.getElementById('httpExpectedStatus').value = expected_status;
-        document.getElementById('httpTimeout').value = timeout;
+        document.getElementById('httpServiceType').value = service_type || 'WEB';
+        document.getElementById('httpTimeout').value = timeout || 5;
         document.getElementById('httpCheckSSL').checked = check_ssl;
-        
+        document.getElementById('httpNotifyTelegram').checked = notify_telegram;
         httpModal.classList.remove('hidden');
         httpModal.classList.add('flex');
+        
+        gsap.fromTo(httpModal.querySelector('.glass-panel'), 
+            { scale: 0.9, opacity: 0, y: 30 }, 
+            { scale: 1, opacity: 1, y: 0, duration: 0.3, ease: "back.out(1.7)" }
+        );
     };
-    
+
     window.cerrarModalHTTP = function() {
-        httpModal.classList.add('hidden');
-        httpModal.classList.remove('flex');
-        httpForm.reset();
+        gsap.to(httpModal.querySelector('.glass-panel'), {
+            scale: 0.9,
+            opacity: 0,
+            y: 30,
+            duration: 0.2,
+            ease: "power3.in",
+            onComplete: () => {
+                httpModal.classList.add('hidden');
+                httpModal.classList.remove('flex');
+                httpForm.reset();
+                reanudarActualizaciones(); // Reanudar al cerrar
+            }
+        });
     };
-    
+
     window.guardarServicioHTTP = async function(event) {
         event.preventDefault();
         const id = document.getElementById('httpId').value;
         const data = {
             name: document.getElementById('httpName').value,
             url: document.getElementById('httpUrl').value,
-            expected_status: parseInt(document.getElementById('httpExpectedStatus').value),
-            timeout: parseInt(document.getElementById('httpTimeout').value),
+            service_type: document.getElementById('httpServiceType').value,
+            expected_status: 200,
+            timeout: parseInt(document.getElementById('httpTimeout').value) || 5,
             check_ssl: document.getElementById('httpCheckSSL').checked,
+            notify_telegram: document.getElementById('httpNotifyTelegram').checked,
             is_active: true
         };
+        
         const method = id ? 'PUT' : 'POST';
         const endpoint = id ? `${httpApiUrl}${id}/` : httpApiUrl;
 
@@ -456,66 +781,70 @@
             if (response.ok) {
                 window.cerrarModalHTTP();
                 window.cargarServiciosHTTP();
+                alert('✅ Servicio web guardado correctamente');
             } else {
                 const errorData = await response.json();
-                alert('Error al guardar: ' + JSON.stringify(errorData));
+                alert('❌ Error al guardar: ' + JSON.stringify(errorData));
             }
-        } catch (error) { console.error('Error:', error); }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('❌ Error al guardar el servicio');
+        }
     };
-    
+
     window.eliminarServicioHTTP = async function(id, name) {
-        if (confirm(`¿Estás seguro de que deseas eliminar el servicio "${name}"?`)) {
+        if (confirm(`¿Eliminar el servicio "${name}"?`)) {
             try {
                 const response = await fetch(`${httpApiUrl}${id}/`, {
                     method: 'DELETE',
                     headers: { 'X-CSRFToken': csrftoken }
                 });
-
-                if (response.ok) {
-                    window.cargarServiciosHTTP();
-                }
+                if (response.ok) window.cargarServiciosHTTP();
             } catch (error) {
                 console.error('Error al eliminar:', error);
             }
         }
     };
-    
-    // Cargar todo al inicio
-    document.addEventListener("DOMContentLoaded", () => {
-        window.cargarNodos();
-        window.cargarServiciosHTTP();
-        nodosInterval = setInterval(window.cargarNodos, tiempoActualizacion);
-        setInterval(window.cargarServiciosHTTP, tiempoActualizacion);
-    });
 
-    // --- LÓGICA DE GRÁFICAS (CHART.JS) ---
+    // ============================================
+    // GRÁFICAS
+    // ============================================
     let chartInstanciaLatencia = null;
+    let chartInstanciaUptime = null;
     let graficasInterval = null;
     const graficasModal = document.getElementById('graficasModal');
 
     window.abrirGraficas = async function(id, name) {
-        nodoActualId = id;
-        document.getElementById('graficasTitle').innerText = `Rendimiento: ${name}`;
+        pausarActualizaciones(); // Pausar actualizaciones al abrir gráficas
         
+        nodoActualId = id;
+        document.getElementById('graficasTitle').innerText = `📊 Rendimiento: ${name}`;
         graficasModal.classList.remove('hidden');
         graficasModal.classList.add('flex');
-
-        gsap.fromTo("#graficasContent", { scale: 0.95, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.4, ease: "power3.out" });
-
+        
+        gsap.fromTo("#graficasContent", 
+            { scale: 0.95, opacity: 0, y: 20 }, 
+            { scale: 1, opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }
+        );
+        
         await cargarDatosGrafica(id);
-
+        
         if (graficasInterval) clearInterval(graficasInterval);
         graficasInterval = setInterval(() => cargarDatosGrafica(id), tiempoActualizacion);
     };
 
     window.cerrarGraficas = function() {
         if (graficasInterval) clearInterval(graficasInterval);
-        
         gsap.to("#graficasContent", {
-            scale: 0.95, opacity: 0, y: 20, duration: 0.2, ease: "power3.in",
+            scale: 0.95,
+            opacity: 0,
+            y: 20,
+            duration: 0.2,
+            ease: "power3.in",
             onComplete: () => {
                 graficasModal.classList.add('hidden');
                 graficasModal.classList.remove('flex');
+                reanudarActualizaciones(); // Reanudar al cerrar
             }
         });
     };
@@ -524,32 +853,36 @@
         try {
             const respuesta = await fetch(`${apiUrl}${id}/history/`);
             let historial = await respuesta.json();
-            
             historial = historial.reverse();
-
+            
             const etiquetas = historial.map(log => {
                 const fecha = new Date(log.timestamp);
                 return `${fecha.getHours()}:${fecha.getMinutes().toString().padStart(2, '0')}`;
             });
-
-            dibujarGraficas(etiquetas, historial);
-
+            
+            const metricsResp = await fetch(`${apiUrl}${id}/metrics/?days=7`);
+            const metrics = await metricsResp.json();
+            
+            dibujarGraficas(etiquetas, historial, metrics);
         } catch (error) {
-            console.error("Error cargando historial", error);
+            console.error("Error cargando historial:", error);
         }
     }
 
-    function dibujarGraficas(etiquetas, datosHistorial) {
+    function dibujarGraficas(etiquetas, datosHistorial, metrics) {
         const ctxLatencia = document.getElementById('latenciaChart').getContext('2d');
+        const ctxUptime = document.getElementById('uptimeChart').getContext('2d');
         
         if (chartInstanciaLatencia) chartInstanciaLatencia.destroy();
+        if (chartInstanciaUptime) chartInstanciaUptime.destroy();
 
-        Chart.defaults.color = '#9ca3af'; 
+        Chart.defaults.color = '#9ca3af';
         Chart.defaults.borderColor = '#334155';
-        Chart.defaults.font.family = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+        Chart.defaults.font.family = 'ui-monospace, monospace';
 
+        // === GRÁFICA 1: LATENCIA ===
         const gradientLatencia = ctxLatencia.createLinearGradient(0, 0, 0, 300);
-        gradientLatencia.addColorStop(0, 'rgba(56, 189, 248, 0.4)'); 
+        gradientLatencia.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
         gradientLatencia.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
 
         const datosLatencia = datosHistorial.map(log => log.is_online ? log.latency_ms : 0);
@@ -586,7 +919,8 @@
                 ]
             },
             options: {
-                responsive: true, maintainAspectRatio: false,
+                responsive: true,
+                maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: { legend: { labels: { usePointStyle: true } } },
                 scales: {
@@ -596,6 +930,107 @@
                 }
             }
         });
+
+        // === GRÁFICA 2: UPTIME ===
+        const dias = 7;
+        const uptimeData = [];
+        const labels = [];
+        for (let i = dias-1; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            labels.push(date.toLocaleDateString());
+            
+            const dayLogs = datosHistorial.filter(log => {
+                const logDate = new Date(log.timestamp);
+                return logDate.toDateString() === date.toDateString();
+            });
+            
+            if (dayLogs.length > 0) {
+                const onlineCount = dayLogs.filter(log => log.is_online).length;
+                uptimeData.push((onlineCount / dayLogs.length) * 100);
+            } else {
+                uptimeData.push(0);
+            }
+        }
+
+        chartInstanciaUptime = new Chart(ctxUptime, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Disponibilidad (%)',
+                    data: uptimeData,
+                    backgroundColor: uptimeData.map(val =>
+                        val >= 95 ? 'rgba(34, 197, 94, 0.7)' :
+                        val >= 80 ? 'rgba(234, 179, 8, 0.7)' :
+                        'rgba(239, 68, 68, 0.7)'
+                    ),
+                    borderColor: '#2d3748',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { min: 0, max: 100, title: { display: true, text: 'Disponibilidad %' } }
+                }
+            }
+        });
     }
+
+    // ============================================
+    // CONTROL DE MODALES
+    // ============================================
+    let modalAbierto = false;
+
+    // Función para pausar/reanudar actualizaciones
+    function pausarActualizaciones() {
+        modalAbierto = true;
+        if (nodosInterval) {
+            clearInterval(nodosInterval);
+            nodosInterval = null;
+        }
+        if (graficasInterval && nodoActualId) {
+            clearInterval(graficasInterval);
+            graficasInterval = null;
+        }
+    }
+
+    function reanudarActualizaciones() {
+        modalAbierto = false;
+        if (!nodosInterval) {
+            nodosInterval = setInterval(window.cargarNodos, tiempoActualizacion);
+        }
+        if (graficasInterval && nodoActualId) {
+            graficasInterval = setInterval(() => cargarDatosGrafica(nodoActualId), tiempoActualizacion);
+        }
+    }
+
+    // ============================================
+    // CONFIGURACIÓN DE TIEMPO
+    // ============================================
+    window.cambiarTiempoActualizacion = function() {
+        tiempoActualizacion = parseInt(document.getElementById('refreshRate').value);
+        if (nodosInterval) clearInterval(nodosInterval);
+        nodosInterval = setInterval(window.cargarNodos, tiempoActualizacion);
+        if (graficasInterval && nodoActualId) {
+            clearInterval(graficasInterval);
+            graficasInterval = setInterval(() => cargarDatosGrafica(nodoActualId), tiempoActualizacion);
+        }
+    };
+
+    // ============================================
+    // INICIALIZACIÓN
+    // ============================================
+    document.addEventListener("DOMContentLoaded", () => {
+        window.cargarNodos();
+        window.cargarServiciosHTTP();
+        window.cargarPredicciones();
+        nodosInterval = setInterval(window.cargarNodos, tiempoActualizacion);
+        setInterval(window.cargarServiciosHTTP, tiempoActualizacion);
+        setInterval(window.cargarPredicciones, 60000);
+    });
 </script>
 {% endblock %}
