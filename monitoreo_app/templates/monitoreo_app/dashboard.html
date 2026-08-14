@@ -3,8 +3,12 @@
 
 {% block content %}
 
+<!-- ============================================ -->
+<!-- HERO / BIENVENIDA -->
+<!-- ============================================ -->
 <div class="glass-panel rounded-2xl p-6 mb-8 border border-blue-500/20">
-    <div class="flex justify-between items-center">
+    <div class="flex flex-wrap justify-between items-center gap-4">
+        <!-- Panel de Control (izquierda) -->
         <div>
             <h1 class="text-2xl font-bold text-white">
                 <i class="fa-solid fa-gauge-high text-blue-400 mr-2"></i>Panel de Control
@@ -13,7 +17,10 @@
                 Monitoreo en tiempo real de tu infraestructura de red
             </p>
         </div>
-        <div class="flex items-center gap-4">
+        
+        <!-- Reportes + Selector de tiempo (derecha) -->
+        <div class="flex flex-wrap items-center gap-4">
+            <!-- Selector de tiempo -->
             <div class="flex items-center gap-2 bg-gray-800/50 px-3 py-2 rounded-lg border border-gray-700">
                 <i class="fa-solid fa-clock text-gray-400"></i>
                 <select id="refreshRate" onchange="window.cambiarTiempoActualizacion()" 
@@ -24,6 +31,26 @@
                     <option value="60000" class="bg-gray-800" selected>1m</option>
                 </select>
             </div>
+            
+            <!-- Separador -->
+            <div class="hidden sm:block w-px h-8 bg-gray-700"></div>
+            
+            <!-- Reportes -->
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-gray-400 hidden sm:inline">Reportes:</span>
+                <a href="/api/reports/pdf/" target="_blank" 
+                   class="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs transition-all hover:scale-105 flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-pdf text-sm"></i>
+                    <span class="hidden sm:inline">PDF</span>
+                </a>
+                <a href="/api/reports/excel/" target="_blank" 
+                   class="bg-green-700 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs transition-all hover:scale-105 flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-excel text-sm"></i>
+                    <span class="hidden sm:inline">Excel</span>
+                </a>
+            </div>
+            
+            <!-- Estado En vivo -->
             <span class="text-xs px-3 py-1 bg-green-500/20 text-green-400 rounded-full border border-green-500/30">
                 <i class="fa-solid fa-circle text-[6px] mr-1 align-middle"></i>
                 En vivo
@@ -33,9 +60,33 @@
 </div>
 
 <!-- ============================================ -->
-<!-- SECCIÓN 1: NODOS DE RED -->
+<!-- TABS: NODOS DE RED / SERVICIOS WEB -->
 <!-- ============================================ -->
-<section class="mb-10">
+<div class="mb-6">
+    <div class="flex border-b border-gray-700">
+        <button id="tabNodos" onclick="window.cambiarTab('nodos')" 
+                class="px-6 py-3 text-sm font-semibold border-b-2 border-blue-500 text-blue-400 transition-colors">
+            <i class="fa-solid fa-server mr-2"></i>Nodos de Red
+            <span id="countNodos" class="ml-2 text-xs bg-gray-700 px-2 py-0.5 rounded-full">0</span>
+        </button>
+        <button id="tabServicios" onclick="window.cambiarTab('servicios')" 
+                class="px-6 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-globe mr-2"></i>Servicios Web
+            <span id="countServicios" class="ml-2 text-xs bg-gray-700 px-2 py-0.5 rounded-full">0</span>
+        </button>
+        <button id="tabPredicciones" onclick="window.cambiarTab('predicciones')" 
+                class="px-6 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-brain mr-2"></i>Predicciones
+            <span id="countPredicciones" class="ml-2 text-xs bg-gray-700 px-2 py-0.5 rounded-full">0</span>
+        </button>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- CONTENEDOR DE NODOS DE RED -->
+<!-- ============================================ -->
+<div id="contenidoNodos" class="mb-10">
+    <!-- Encabezado de Nodos -->
     <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
         <div class="flex items-center gap-3">
             <div class="p-2 bg-blue-500/10 rounded-lg">
@@ -57,15 +108,60 @@
             </button>
         </div>
     </div>
+    
+    <!-- Controles de paginación y filtro Nodos -->
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+        <div class="flex flex-wrap items-center gap-3">
+            <span class="text-sm text-gray-400">Mostrar:</span>
+            <select id="pageSizeNodos" onchange="window.cambiarTamanoPaginaNodos()" 
+                    class="bg-gray-800 text-white border border-gray-600 rounded-lg p-2 focus:border-blue-500 focus:outline-none text-sm">
+                <option value="8" selected>8</option>
+                <option value="16">16</option>
+                <option value="24">24</option>
+                <option value="32">32</option>
+            </select>
+
+            <span class="text-sm text-gray-400" id="resultCountNodos">0 nodos</span>
+
+            
+            <!-- Separador vertical -->
+            <div class="w-px h-6 bg-gray-700"></div>
+            
+            <!-- FILTRO DE NODOS (más cerca) -->
+            <div class="relative">
+                <input type="text" id="filterNodos" 
+                    placeholder="🔍 Buscar nodo..." 
+                    oninput="window.filtrarNodos()"
+                    class="bg-gray-800 text-white border border-gray-600 rounded-lg p-2 pl-8 text-sm focus:border-blue-500 focus:outline-none w-40 transition-all focus:w-56">
+                <i class="fa-solid fa-search absolute left-2.5 top-3 text-gray-500 text-xs"></i>
+                <button onclick="window.limpiarFiltroNodos()" 
+                        class="absolute right-2 top-2 text-gray-500 hover:text-white transition-colors hidden" 
+                        id="clearFilterNodos">
+                    <i class="fa-solid fa-times text-xs"></i>
+                </button>
+            </div>
+            
+            <span class="text-xs text-gray-500" id="filterStatusNodos"></span>
+        </div>
+        <div class="flex items-center gap-2" id="paginationNodos">
+            <!-- Controles de paginación (JS) -->
+        </div>
+    </div>
+    
+    <!-- Grid de Nodos -->
     <div id="nodos-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <!-- Tarjetas de nodos (JS) -->
     </div>
-</section>
+    
+    <!-- Paginación inferior Nodos -->
+    <div class="flex justify-center mt-4" id="paginationNodosBottom"></div>
+</div>
 
 <!-- ============================================ -->
-<!-- SECCIÓN 2: SERVICIOS WEB -->
+<!-- CONTENEDOR DE SERVICIOS WEB -->
 <!-- ============================================ -->
-<section class="mb-10">
+<div id="contenidoServicios" class="mb-10 hidden">
+    <!-- Encabezado de Servicios Web -->
     <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
         <div class="flex items-center gap-3">
             <div class="p-2 bg-green-500/10 rounded-lg">
@@ -81,21 +177,66 @@
                     class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm transition-all hover:scale-105">
                 <i class="fa-solid fa-plus mr-1"></i> Nuevo
             </button>
-            <button onclick="window.cargarServiciosHTTP()" 
+            <button onclick="window.cargarServiciosHTTP(estadoServicios.paginaActual)" 
                     class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-all hover:scale-105">
                 <i class="fa-solid fa-rotate-right mr-1"></i> Actualizar
             </button>
         </div>
     </div>
+    
+    <!-- Controles de paginación y filtro Servicios Web -->
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+        <div class="flex flex-wrap items-center gap-3">
+            <span class="text-sm text-gray-400">Mostrar:</span>
+            <select id="pageSizeServicios" onchange="window.cambiarTamanoPaginaServicios()" 
+                    class="bg-gray-800 text-white border border-gray-600 rounded-lg p-2 focus:border-green-500 focus:outline-none text-sm">
+                <option value="8" selected>8</option>
+                <option value="16">16</option>
+                <option value="24">24</option>
+                <option value="32">32</option>
+            </select>
+
+            <span class="text-sm text-gray-400" id="resultCountServicios">0 servicios</span>
+
+            
+            <!-- Separador vertical -->
+            <div class="w-px h-6 bg-gray-700"></div>
+            
+            <!-- FILTRO DE SERVICIOS (más cerca) -->
+            <div class="relative">
+                <input type="text" id="filterServicios" 
+                    placeholder="🔍 Buscar servicio..." 
+                    oninput="window.filtrarServicios()"
+                    class="bg-gray-800 text-white border border-gray-600 rounded-lg p-2 pl-8 text-sm focus:border-green-500 focus:outline-none w-40 transition-all focus:w-56">
+                <i class="fa-solid fa-search absolute left-2.5 top-3 text-gray-500 text-xs"></i>
+                <button onclick="window.limpiarFiltroServicios()" 
+                        class="absolute right-2 top-2 text-gray-500 hover:text-white transition-colors hidden" 
+                        id="clearFilterServicios">
+                    <i class="fa-solid fa-times text-xs"></i>
+                </button>
+            </div>
+            
+            <span class="text-xs text-gray-500" id="filterStatusServicios"></span>
+        </div>
+        <div class="flex items-center gap-2" id="paginationServicios">
+            <!-- Controles de paginación (JS) -->
+        </div>
+    </div>
+    
+    <!-- Grid de Servicios Web -->
     <div id="http-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <!-- Tarjetas de servicios (JS) -->
     </div>
-</section>
+    
+    <!-- Paginación inferior Servicios Web -->
+    <div class="flex justify-center mt-4" id="paginationServiciosBottom"></div>
+</div>
 
 <!-- ============================================ -->
-<!-- SECCIÓN 3: PREDICCIONES DE FALLOS -->
+<!-- CONTENEDOR DE PREDICCIONES -->
 <!-- ============================================ -->
-<section class="mb-10">
+<div id="contenidoPredicciones" class="mb-10 hidden">
+    <!-- Encabezado de Predicciones -->
     <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
         <div class="flex items-center gap-3">
             <div class="p-2 bg-purple-500/10 rounded-lg">
@@ -106,44 +247,54 @@
                 <p class="text-xs text-gray-400">Análisis predictivo basado en patrones</p>
             </div>
         </div>
-        <button onclick="window.cargarPredicciones()" 
+        <button onclick="window.cargarPredicciones(estadoPredicciones.paginaActual)" 
                 class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm transition-all hover:scale-105">
             <i class="fa-solid fa-rotate-right mr-1"></i> Analizar ahora
         </button>
     </div>
+    
+    <!-- Controles de paginación y filtro Predicciones -->
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+        <div class="flex flex-wrap items-center gap-3">
+            <span class="text-sm text-gray-400">Mostrar:</span>
+            <select id="pageSizePredicciones" onchange="window.cambiarTamanoPaginaPredicciones()" 
+                    class="bg-gray-800 text-white border border-gray-600 rounded-lg p-2 focus:border-purple-500 focus:outline-none text-sm">
+                <option value="4" selected>4</option>
+                <option value="8">8</option>
+                <option value="12">12</option>
+                <option value="16">16</option>
+            </select>
+            
+            <span class="text-sm text-gray-400" id="resultCountPredicciones">0 predicciones</span>
+
+            <!-- Separador vertical -->
+            <div class="w-px h-6 bg-gray-700"></div>
+            
+            <!-- FILTRO DE PREDICCIONES (más cerca) -->
+            <div class="relative">
+                <input type="text" id="filterPredicciones" 
+                    placeholder="🔍 Buscar predicción..." 
+                    oninput="window.filtrarPredicciones()"
+                    class="bg-gray-800 text-white border border-gray-600 rounded-lg p-2 pl-8 text-sm focus:border-purple-500 focus:outline-none w-40 transition-all focus:w-56">
+                <i class="fa-solid fa-search absolute left-2.5 top-3 text-gray-500 text-xs"></i>
+                <button onclick="window.limpiarFiltroPredicciones()" 
+                        class="absolute right-2 top-2 text-gray-500 hover:text-white transition-colors hidden" 
+                        id="clearFilterPredicciones">
+                    <i class="fa-solid fa-times text-xs"></i>
+                </button>
+            </div>
+            
+            <span class="text-xs text-gray-500" id="filterStatusPredicciones"></span>
+        </div>
+        <div class="flex items-center gap-2" id="paginationPredicciones">
+            <!-- Controles de paginación (JS) -->
+        </div>
+    </div>
+    
     <div id="predictions-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Predicciones (JS) -->
     </div>
-</section>
-
-<!-- ============================================ -->
-<!-- SECCIÓN 4: REPORTES -->
-<!-- ============================================ -->
-<section class="mb-8">
-    <div class="glass-panel rounded-xl p-5 border border-gray-700/50">
-        <div class="flex flex-wrap justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-blue-500/10 rounded-lg">
-                    <i class="fa-solid fa-file-alt text-blue-400 text-xl"></i>
-                </div>
-                <div>
-                    <h2 class="text-lg font-semibold text-white">Reportes</h2>
-                    <p class="text-xs text-gray-400">Exporta informes en PDF o Excel</p>
-                </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-3">
-                <a href="/api/reports/pdf/" target="_blank" 
-                   class="bg-red-600 hover:bg-red-500 text-white px-5 py-2.5 rounded-lg text-sm transition-all hover:scale-105 flex items-center gap-2">
-                    <i class="fa-solid fa-file-pdf"></i> PDF
-                </a>
-                <a href="/api/reports/excel/" target="_blank" 
-                   class="bg-green-700 hover:bg-green-600 text-white px-5 py-2.5 rounded-lg text-sm transition-all hover:scale-105 flex items-center gap-2">
-                    <i class="fa-solid fa-file-excel"></i> Excel
-                </a>
-            </div>
-        </div>
-    </div>
-</section>
+</div>
 
 <!-- ============================================ -->
 <!-- MODALES -->
@@ -339,7 +490,27 @@
     const httpApiUrl = '/api/http-endpoints/';
     let tiempoActualizacion = 60000;
     let nodosInterval = null;
+    let serviciosInterval = null;
     let nodoActualId = null;
+    let tabActual = 'nodos';
+
+    // Estado de paginación Nodos
+    let estadoNodos = {
+        paginaActual: 1,
+        tamanoPagina: 8,
+        totalElementos: 0,
+        totalPaginas: 0,
+        datos: []
+    };
+
+    // Estado de paginación Servicios
+    let estadoServicios = {
+        paginaActual: 1,
+        tamanoPagina: 8,
+        totalElementos: 0,
+        totalPaginas: 0,
+        datos: []
+    };
 
     // CSRF Token
     function getCookie(name) {
@@ -380,13 +551,67 @@
     };
 
     // ============================================
-    // NODOS DE RED
+    // TABS
     // ============================================
-    window.cargarNodos = async function() {
+    window.cambiarTab = function(tab) {
+        tabActual = tab;
+        
+        const tabNodos = document.getElementById('tabNodos');
+        const tabServicios = document.getElementById('tabServicios');
+        const tabPredicciones = document.getElementById('tabPredicciones');
+        const contenidoNodos = document.getElementById('contenidoNodos');
+        const contenidoServicios = document.getElementById('contenidoServicios');
+        const contenidoPredicciones = document.getElementById('contenidoPredicciones');
+        
+        // Resetear todos los tabs
+        tabNodos.className = 'px-6 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors';
+        tabServicios.className = 'px-6 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors';
+        tabPredicciones.className = 'px-6 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition-colors';
+        
+        // Ocultar todos los contenidos
+        contenidoNodos.classList.add('hidden');
+        contenidoServicios.classList.add('hidden');
+        contenidoPredicciones.classList.add('hidden');
+        
+        if (tab === 'nodos') {
+            tabNodos.className = 'px-6 py-3 text-sm font-semibold border-b-2 border-blue-500 text-blue-400 transition-colors';
+            contenidoNodos.classList.remove('hidden');
+        } else if (tab === 'servicios') {
+            tabServicios.className = 'px-6 py-3 text-sm font-semibold border-b-2 border-green-500 text-green-400 transition-colors';
+            contenidoServicios.classList.remove('hidden');
+        } else if (tab === 'predicciones') {
+            tabPredicciones.className = 'px-6 py-3 text-sm font-semibold border-b-2 border-purple-500 text-purple-400 transition-colors';
+            contenidoPredicciones.classList.remove('hidden');
+        }
+    };
+
+    // ============================================
+    // NODOS DE RED CON PAGINACIÓN
+    // ============================================
+    window.cargarNodos = async function(pagina = 1) {
         try {
+            estadoNodos.paginaActual = pagina;
+            const pageSize = parseInt(document.getElementById('pageSizeNodos').value);
+            estadoNodos.tamanoPagina = pageSize;
+            
             const respuesta = await fetch(apiUrl);
-            const nodos = await respuesta.json();
-            window.renderizarNodos(nodos);
+            const todosLosNodos = await respuesta.json();
+            
+            estadoNodos.datos = todosLosNodos;
+            estadoNodos.totalElementos = todosLosNodos.length;
+            estadoNodos.totalPaginas = Math.ceil(estadoNodos.totalElementos / pageSize);
+            
+            // Actualizar contador
+            document.getElementById('countNodos').textContent = estadoNodos.totalElementos;
+            document.getElementById('resultCountNodos').textContent = `${estadoNodos.totalElementos} nodos`;
+            
+            // Paginar
+            const start = (pagina - 1) * pageSize;
+            const end = start + pageSize;
+            const nodosPagina = todosLosNodos.slice(start, end);
+            
+            window.renderizarNodos(nodosPagina);
+            window.renderizarPaginacionNodos();
         } catch (error) {
             console.error("Error al cargar nodos:", error);
         }
@@ -395,6 +620,17 @@
     window.renderizarNodos = function(nodos) {
         const container = document.getElementById('nodos-container');
         container.innerHTML = '';
+        
+        if (nodos.length === 0) {
+            container.innerHTML = `
+                <div class="glass-panel p-8 rounded-xl col-span-4 text-center text-gray-400 border border-gray-700/50">
+                    <i class="fa-solid fa-inbox text-4xl mb-3 block text-gray-600"></i>
+                    <p class="text-lg font-semibold text-gray-300">No hay nodos registrados</p>
+                    <p class="text-sm mt-1">Haz clic en "Nuevo" para agregar tu primer dispositivo</p>
+                </div>
+            `;
+            return;
+        }
         
         nodos.forEach(nodo => {
             const icono = window.obtenerIcono(nodo.device_type);
@@ -407,7 +643,9 @@
             const notificacionColor = nodo.notify_telegram ? 'text-green-400' : 'text-gray-500';
             
             container.innerHTML += `
-                <div class="glass-panel rounded-xl p-5 hover:border-blue-500 transition-colors relative group">
+                <div class="nodo-card glass-panel rounded-xl p-5 hover:border-blue-500 transition-colors relative group" 
+                    data-nombre="${nodo.name}" 
+                    data-ip="${nodo.ip_address}">
                     <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onclick="window.abrirGraficas('${nodo.id}', '${safeName}')" 
                                 class="text-gray-400 hover:text-green-400 p-1">
@@ -459,20 +697,63 @@
             `;
         });
         
-        gsap.fromTo(".glass-panel", 
+        // Limpiar filtro al renderizar
+        document.getElementById('filterNodos').value = '';
+        document.getElementById('filterStatusNodos').textContent = '';
+        document.getElementById('clearFilterNodos').classList.add('hidden');
+        
+        gsap.fromTo(".nodo-card", 
             { y: 30, opacity: 0 }, 
-            { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "back.out(1.7)" }
+            { y: 0, opacity: 1, duration: 0.4, stagger: 0.08, ease: "back.out(1.7)" }
         );
     };
 
     // ============================================
-    // SERVICIOS WEB
+    // PAGINACIÓN NODOS
     // ============================================
-    window.cargarServiciosHTTP = async function() {
+    window.renderizarPaginacionNodos = function() {
+        const { paginaActual, totalPaginas } = estadoNodos;
+        
+        if (totalPaginas <= 1) {
+            document.getElementById('paginationNodos').innerHTML = '';
+            document.getElementById('paginationNodosBottom').innerHTML = '';
+            return;
+        }
+        
+        const controles = generarControlesPaginacion(paginaActual, totalPaginas, 'window.cargarNodos');
+        document.getElementById('paginationNodos').innerHTML = `
+            ${controles}
+            <span class="text-xs text-gray-500 ml-2">Pág. ${paginaActual} de ${totalPaginas}</span>
+        `;
+    };
+
+    // ============================================
+    // SERVICIOS WEB CON PAGINACIÓN
+    // ============================================
+    window.cargarServiciosHTTP = async function(pagina = 1) {
         try {
+            estadoServicios.paginaActual = pagina;
+            const pageSize = parseInt(document.getElementById('pageSizeServicios').value);
+            estadoServicios.tamanoPagina = pageSize;
+            
             const respuesta = await fetch(httpApiUrl);
-            const servicios = await respuesta.json();
-            window.renderizarServiciosHTTP(servicios);
+            const todosLosServicios = await respuesta.json();
+            
+            estadoServicios.datos = todosLosServicios;
+            estadoServicios.totalElementos = todosLosServicios.length;
+            estadoServicios.totalPaginas = Math.ceil(estadoServicios.totalElementos / pageSize);
+            
+            // Actualizar contador
+            document.getElementById('countServicios').textContent = estadoServicios.totalElementos;
+            document.getElementById('resultCountServicios').textContent = `${estadoServicios.totalElementos} servicios`;
+            
+            // Paginar
+            const start = (pagina - 1) * pageSize;
+            const end = start + pageSize;
+            const serviciosPagina = todosLosServicios.slice(start, end);
+            
+            window.renderizarServiciosHTTP(serviciosPagina);
+            window.renderizarPaginacionServicios();
         } catch (error) {
             console.error("Error al cargar servicios HTTP:", error);
         }
@@ -481,6 +762,17 @@
     window.renderizarServiciosHTTP = function(servicios) {
         const container = document.getElementById('http-container');
         container.innerHTML = '';
+        
+        if (servicios.length === 0) {
+            container.innerHTML = `
+                <div class="glass-panel p-8 rounded-xl col-span-4 text-center text-gray-400 border border-gray-700/50">
+                    <i class="fa-solid fa-inbox text-4xl mb-3 block text-gray-600"></i>
+                    <p class="text-lg font-semibold text-gray-300">No hay servicios web registrados</p>
+                    <p class="text-sm mt-1">Haz clic en "Nuevo" para agregar tu primer servicio</p>
+                </div>
+            `;
+            return;
+        }
         
         const serviceIcons = {
             'WEB': 'fa-globe text-blue-400',
@@ -507,7 +799,11 @@
             const notificacionColor = servicio.notify_telegram ? 'text-green-400' : 'text-gray-500';
             
             container.innerHTML += `
-                <div class="glass-panel rounded-xl p-5 hover:border-blue-500 transition-colors relative group">
+                <div class="servicio-card glass-panel rounded-xl p-5 hover:border-green-500 transition-colors relative group" 
+                    data-nombre="${servicio.name}" 
+                    data-url="${servicio.url}" 
+                    data-tipo="${servicio.service_type}">
+                <div class="glass-panel rounded-xl p-5 hover:border-green-500 transition-colors relative group">
                     <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onclick="window.abrirModalHTTP('${servicio.id}', '${safeName}', '${servicio.url}', '${servicio.service_type}', ${servicio.timeout || 5}, ${servicio.check_ssl}, ${servicio.notify_telegram})" 
                                 class="text-gray-400 hover:text-blue-400 p-1">
@@ -561,12 +857,102 @@
         
         gsap.fromTo(".glass-panel", 
             { y: 30, opacity: 0 }, 
-            { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "back.out(1.7)" }
+            { y: 0, opacity: 1, duration: 0.4, stagger: 0.08, ease: "back.out(1.7)" }
         );
     };
 
     // ============================================
-    // PREDICCIONES
+    // PAGINACIÓN SERVICIOS
+    // ============================================
+    window.renderizarPaginacionServicios = function() {
+        const { paginaActual, totalPaginas } = estadoServicios;
+        
+        if (totalPaginas <= 1) {
+            document.getElementById('paginationServicios').innerHTML = '';
+            document.getElementById('paginationServiciosBottom').innerHTML = '';
+            return;
+        }
+        
+        const controles = generarControlesPaginacion(paginaActual, totalPaginas, 'window.cargarServiciosHTTP');
+        document.getElementById('paginationServicios').innerHTML = `
+            ${controles}
+            <span class="text-xs text-gray-500 ml-2">Pág. ${paginaActual} de ${totalPaginas}</span>
+        `;
+        document.getElementById('paginationServiciosBottom').innerHTML = `
+            <div class="flex items-center gap-2 glass-panel px-4 py-2 rounded-xl border border-gray-700/50">
+                ${controles}
+            </div>
+        `;
+    };
+
+    // ============================================
+    // GENERADOR DE CONTROLES DE PAGINACIÓN
+    // ============================================
+    function generarControlesPaginacion(paginaActual, totalPaginas, funcion) {
+        let html = '';
+        
+        // Botón Anterior
+        html += `
+            <button onclick="${funcion}(${paginaActual - 1})" 
+                    class="px-3 py-1.5 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-colors ${paginaActual <= 1 ? 'opacity-50 cursor-not-allowed' : ''}"
+                    ${paginaActual <= 1 ? 'disabled' : ''}>
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+        `;
+        
+        // Números de página
+        let startPage = Math.max(1, paginaActual - 2);
+        let endPage = Math.min(totalPaginas, paginaActual + 2);
+        
+        if (startPage > 1) {
+            html += `
+                <button onclick="${funcion}(1)" 
+                        class="px-3 py-1.5 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-colors">1</button>
+                ${startPage > 2 ? '<span class="text-gray-500 px-1">...</span>' : ''}
+            `;
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const active = i === paginaActual ? 'bg-blue-600 text-white' : 'bg-gray-700 hover:bg-gray-600';
+            html += `
+                <button onclick="${funcion}(${i})" 
+                        class="px-3 py-1.5 rounded-lg text-sm ${active} transition-colors">${i}</button>
+            `;
+        }
+        
+        if (endPage < totalPaginas) {
+            html += `
+                ${endPage < totalPaginas - 1 ? '<span class="text-gray-500 px-1">...</span>' : ''}
+                <button onclick="${funcion}(${totalPaginas})" 
+                        class="px-3 py-1.5 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-colors">${totalPaginas}</button>
+            `;
+        }
+        
+        // Botón Siguiente
+        html += `
+            <button onclick="${funcion}(${paginaActual + 1})" 
+                    class="px-3 py-1.5 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-colors ${paginaActual >= totalPaginas ? 'opacity-50 cursor-not-allowed' : ''}"
+                    ${paginaActual >= totalPaginas ? 'disabled' : ''}>
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        `;
+        
+        return html;
+    }
+
+    // ============================================
+    // CAMBIAR TAMAÑO DE PÁGINA
+    // ============================================
+    window.cambiarTamanoPaginaNodos = function() {
+        window.cargarNodos(1);
+    };
+
+    window.cambiarTamanoPaginaServicios = function() {
+        window.cargarServiciosHTTP(1);
+    };
+
+    // ============================================
+    // PREDICCIONES (ACTUALIZACIÓN INDEPENDIENTE)
     // ============================================
     window.cargarPredicciones = async function() {
         try {
@@ -578,26 +964,73 @@
         }
     };
 
+    // ============================================
+    // PREDICCIONES CON PAGINACIÓN
+    // ============================================
+    let estadoPredicciones = {
+        paginaActual: 1,
+        tamanoPagina: 4,
+        totalElementos: 0,
+        totalPaginas: 0,
+        datos: []
+    };
+    let prediccionesInterval = null;
+
+    window.cargarPredicciones = async function(pagina = 1) {
+        try {
+            estadoPredicciones.paginaActual = pagina;
+            const pageSize = parseInt(document.getElementById('pageSizePredicciones').value);
+            estadoPredicciones.tamanoPagina = pageSize;
+            
+            const response = await fetch('/api/nodes/predictions/');
+            const todasLasPredicciones = await response.json();
+            
+            estadoPredicciones.datos = todasLasPredicciones;
+            estadoPredicciones.totalElementos = todasLasPredicciones.length;
+            estadoPredicciones.totalPaginas = Math.ceil(estadoPredicciones.totalElementos / pageSize);
+            
+            // Actualizar contador
+            document.getElementById('resultCountPredicciones').textContent = `${estadoPredicciones.totalElementos} predicciones`;
+            
+            // Paginar
+            const start = (pagina - 1) * pageSize;
+            const end = start + pageSize;
+            const prediccionesPagina = todasLasPredicciones.slice(start, end);
+            
+            window.renderizarPredicciones(prediccionesPagina);
+            window.renderizarPaginacionPredicciones();
+        } catch (error) {
+            console.error("Error cargando predicciones:", error);
+        }
+    };
+
     window.renderizarPredicciones = function(predictions) {
         const container = document.getElementById('predictions-container');
         container.innerHTML = '';
         
         if (predictions.length === 0) {
             container.innerHTML = `
-                <div class="glass-panel p-6 rounded-xl col-span-2 text-center text-gray-400">
-                    <i class="fa-solid fa-check-circle text-3xl mb-2 block text-green-400"></i>
-                    <p>✅ No se detectaron posibles fallos</p>
-                    <p class="text-xs mt-1">Todos los nodos parecen estar estables</p>
+                <div class="glass-panel p-8 rounded-xl col-span-2 text-center text-gray-400 border border-gray-700/50">
+                    <i class="fa-solid fa-check-circle text-4xl mb-3 block text-green-400"></i>
+                    <p class="text-lg font-semibold text-white">✅ No se detectaron posibles fallos</p>
+                    <p class="text-sm mt-1">Todos los nodos parecen estar estables</p>
                 </div>
             `;
             return;
         }
         
         const severityColors = {
-            'critical': 'border-red-500 bg-red-500/10',
-            'warning': 'border-yellow-500 bg-yellow-500/10',
-            'info': 'border-blue-500 bg-blue-500/10'
+            'critical': 'border-red-500 bg-red-500/5',
+            'warning': 'border-orange-400 bg-orange-400/5',  // Más sutil
+            'info': 'border-blue-400 bg-blue-400/5'
         };
+        
+        const severityBadges = {
+            'critical': 'bg-red-500/15 text-red-400 border border-red-500/20',
+            'warning': 'bg-orange-400/15 text-orange-400 border border-orange-400/20',  // Naranja suave
+            'info': 'bg-blue-400/15 text-blue-400 border border-blue-400/20'
+        };
+        
         const severityIcons = {
             'critical': '🚨',
             'warning': '⚠️',
@@ -606,34 +1039,126 @@
         
         predictions.forEach(pred => {
             container.innerHTML += `
-                <div class="glass-panel p-4 rounded-xl border-l-4 ${severityColors[pred.severity] || 'border-gray-500'}">
+                <div class="prediccion-card glass-panel p-4 rounded-xl border-l-4 ${severityColors[pred.severity] || 'border-gray-500'} hover:border-l-6 transition-all hover:shadow-lg"
+                    data-nombre="${pred.node.name}" 
+                    data-mensaje="${pred.message}" 
+                    data-tipo="${pred.type}">
                     <div class="flex items-start gap-3">
                         <div class="text-2xl">${severityIcons[pred.severity] || '📢'}</div>
                         <div class="flex-1">
-                            <p class="font-semibold text-sm">${pred.node.name}</p>
-                            <p class="text-sm">${pred.message}</p>
-                            <p class="text-xs text-gray-400 mt-1">${pred.detail}</p>
-                            <div class="mt-2 flex gap-2">
-                                <span class="text-xs px-2 py-0.5 bg-gray-700/50 rounded-full">${pred.type}</span>
-                                <span class="text-xs px-2 py-0.5 ${pred.severity === 'critical' ? 'bg-red-500/20 text-red-400' : pred.severity === 'warning' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-blue-500/20 text-blue-400'} rounded-full">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <p class="font-semibold text-sm">${pred.node.name}</p>
+                                <span class="text-xs px-2.5 py-0.5 rounded-full ${severityBadges[pred.severity] || 'bg-gray-700/50 text-gray-400'}">
                                     ${pred.severity.toUpperCase()}
                                 </span>
+                            </div>
+                            <p class="text-sm mt-1">${pred.message}</p>
+                            <p class="text-xs text-gray-400 mt-1">${pred.detail}</p>
+                            <div class="mt-2 flex flex-wrap gap-2">
+                            
                             </div>
                         </div>
                     </div>
                 </div>
             `;
         });
+        
+        gsap.fromTo(".prediccion-card", 
+            { y: 20, opacity: 0 }, 
+            { y: 0, opacity: 1, duration: 0.3, stagger: 0.08, ease: "back.out(1.7)" }
+        );
+    };
+
+    window.renderizarPaginacionPredicciones = function() {
+        const { paginaActual, totalPaginas } = estadoPredicciones;
+        
+        // Solo usar la paginación superior (la inferior fue eliminada)
+        const paginationElement = document.getElementById('paginationPredicciones');
+        
+        if (!paginationElement) {
+            console.warn('Elemento paginationPredicciones no encontrado');
+            return;
+        }
+        
+        if (totalPaginas <= 1) {
+            paginationElement.innerHTML = '';
+            return;
+        }
+        
+        const controles = generarControlesPaginacionPredicciones(paginaActual, totalPaginas);
+        paginationElement.innerHTML = `
+            ${controles}
+            <span class="text-xs text-gray-500 ml-2">Pág. ${paginaActual} de ${totalPaginas}</span>
+        `;
+    };
+
+    function generarControlesPaginacionPredicciones(paginaActual, totalPaginas) {
+        let html = '';
+        
+        // Botón Anterior
+        html += `
+            <button onclick="window.cargarPredicciones(${paginaActual - 1})" 
+                    class="px-3 py-1.5 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-colors ${paginaActual <= 1 ? 'opacity-50 cursor-not-allowed' : ''}"
+                    ${paginaActual <= 1 ? 'disabled' : ''}>
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+        `;
+        
+        // Números de página
+        let startPage = Math.max(1, paginaActual - 2);
+        let endPage = Math.min(totalPaginas, paginaActual + 2);
+        
+        if (startPage > 1) {
+            html += `
+                <button onclick="window.cargarPredicciones(1)" 
+                        class="px-3 py-1.5 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-colors">1</button>
+                ${startPage > 2 ? '<span class="text-gray-500 px-1">...</span>' : ''}
+            `;
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const active = i === paginaActual ? 'bg-purple-600 text-white' : 'bg-gray-700 hover:bg-gray-600';
+            html += `
+                <button onclick="window.cargarPredicciones(${i})" 
+                        class="px-3 py-1.5 rounded-lg text-sm ${active} transition-colors">${i}</button>
+            `;
+        }
+        
+        if (endPage < totalPaginas) {
+            html += `
+                ${endPage < totalPaginas - 1 ? '<span class="text-gray-500 px-1">...</span>' : ''}
+                <button onclick="window.cargarPredicciones(${totalPaginas})" 
+                        class="px-3 py-1.5 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-colors">${totalPaginas}</button>
+            `;
+        }
+        
+        // Botón Siguiente
+        html += `
+            <button onclick="window.cargarPredicciones(${paginaActual + 1})" 
+                    class="px-3 py-1.5 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 transition-colors ${paginaActual >= totalPaginas ? 'opacity-50 cursor-not-allowed' : ''}"
+                    ${paginaActual >= totalPaginas ? 'disabled' : ''}>
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        `;
+        
+        return html;
+    }
+
+    // ============================================
+    // CAMBIAR TAMAÑO DE PÁGINA PREDICCIONES
+    // ============================================
+    window.cambiarTamanoPaginaPredicciones = function() {
+        window.cargarPredicciones(1);
     };
 
     // ============================================
-    // MODALES - NODOS
+    // MODALES - NODOS (se mantienen igual)
     // ============================================
     const modal = document.getElementById('nodoModal');
     const form = document.getElementById('nodoForm');
 
     window.abrirModal = function(id = null, name = '', ip = '', type = 'OTHER', notify_telegram = true) {
-        pausarActualizaciones(); // Pausar actualizaciones al abrir modal
+        pausarActualizaciones();
         
         document.getElementById('modalTitle').innerText = id ? 'Editar Dispositivo' : 'Nuevo Dispositivo';
         document.getElementById('nodoId').value = id || '';
@@ -661,7 +1186,7 @@
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
                 form.reset();
-                reanudarActualizaciones(); // Reanudar al cerrar
+                reanudarActualizaciones();
             }
         });
     };
@@ -688,7 +1213,7 @@
             });
             if (response.ok) {
                 window.cerrarModal();
-                window.cargarNodos();
+                window.cargarNodos(estadoNodos.paginaActual);
             } else {
                 const errorData = await response.json();
                 alert('Error al guardar: ' + JSON.stringify(errorData));
@@ -706,7 +1231,7 @@
                     method: 'DELETE',
                     headers: { 'X-CSRFToken': csrftoken }
                 });
-                if (response.ok) window.cargarNodos();
+                if (response.ok) window.cargarNodos(estadoNodos.paginaActual);
             } catch (error) {
                 console.error('Error al eliminar:', error);
             }
@@ -720,7 +1245,7 @@
     const httpForm = document.getElementById('httpForm');
 
     window.abrirModalHTTP = function(id = null, name = '', url = '', service_type = 'WEB', timeout = 5, check_ssl = true, notify_telegram = true) {
-        pausarActualizaciones(); // Pausar actualizaciones al abrir modal
+        pausarActualizaciones();
         
         document.getElementById('httpModalTitle').innerText = id ? 'Editar Servicio' : 'Nuevo Servicio Web';
         document.getElementById('httpId').value = id || '';
@@ -750,7 +1275,7 @@
                 httpModal.classList.add('hidden');
                 httpModal.classList.remove('flex');
                 httpForm.reset();
-                reanudarActualizaciones(); // Reanudar al cerrar
+                reanudarActualizaciones();
             }
         });
     };
@@ -780,7 +1305,7 @@
             });
             if (response.ok) {
                 window.cerrarModalHTTP();
-                window.cargarServiciosHTTP();
+                window.cargarServiciosHTTP(estadoServicios.paginaActual);
                 alert('✅ Servicio web guardado correctamente');
             } else {
                 const errorData = await response.json();
@@ -799,7 +1324,7 @@
                     method: 'DELETE',
                     headers: { 'X-CSRFToken': csrftoken }
                 });
-                if (response.ok) window.cargarServiciosHTTP();
+                if (response.ok) window.cargarServiciosHTTP(estadoServicios.paginaActual);
             } catch (error) {
                 console.error('Error al eliminar:', error);
             }
@@ -815,7 +1340,7 @@
     const graficasModal = document.getElementById('graficasModal');
 
     window.abrirGraficas = async function(id, name) {
-        pausarActualizaciones(); // Pausar actualizaciones al abrir gráficas
+        pausarActualizaciones();
         
         nodoActualId = id;
         document.getElementById('graficasTitle').innerText = `📊 Rendimiento: ${name}`;
@@ -844,7 +1369,7 @@
             onComplete: () => {
                 graficasModal.classList.add('hidden');
                 graficasModal.classList.remove('flex');
-                reanudarActualizaciones(); // Reanudar al cerrar
+                reanudarActualizaciones();
             }
         });
     };
@@ -985,39 +1510,44 @@
     // ============================================
     let modalAbierto = false;
 
-    // Función para pausar/reanudar actualizaciones
     function pausarActualizaciones() {
         modalAbierto = true;
-        if (nodosInterval) {
-            clearInterval(nodosInterval);
-            nodosInterval = null;
-        }
-        if (graficasInterval && nodoActualId) {
-            clearInterval(graficasInterval);
-            graficasInterval = null;
-        }
     }
 
     function reanudarActualizaciones() {
         modalAbierto = false;
-        if (!nodosInterval) {
-            nodosInterval = setInterval(window.cargarNodos, tiempoActualizacion);
-        }
-        if (graficasInterval && nodoActualId) {
-            graficasInterval = setInterval(() => cargarDatosGrafica(nodoActualId), tiempoActualizacion);
-        }
     }
 
     // ============================================
-    // CONFIGURACIÓN DE TIEMPO
+    // CONFIGURACIÓN DE TIEMPO (SOLO NODOS Y SERVICIOS)
     // ============================================
     window.cambiarTiempoActualizacion = function() {
         tiempoActualizacion = parseInt(document.getElementById('refreshRate').value);
+        
+        // Reiniciar intervalo de Nodos
         if (nodosInterval) clearInterval(nodosInterval);
-        nodosInterval = setInterval(window.cargarNodos, tiempoActualizacion);
+        nodosInterval = setInterval(() => {
+            if (!modalAbierto) {
+                window.cargarNodos(estadoNodos.paginaActual);
+            }
+        }, tiempoActualizacion);
+        
+        // Reiniciar intervalo de Servicios
+        if (serviciosInterval) clearInterval(serviciosInterval);
+        serviciosInterval = setInterval(() => {
+            if (!modalAbierto) {
+                window.cargarServiciosHTTP(estadoServicios.paginaActual);
+            }
+        }, tiempoActualizacion);
+        
+        // Actualizar gráficas si están abiertas
         if (graficasInterval && nodoActualId) {
             clearInterval(graficasInterval);
-            graficasInterval = setInterval(() => cargarDatosGrafica(nodoActualId), tiempoActualizacion);
+            graficasInterval = setInterval(() => {
+                if (!modalAbierto) {
+                    cargarDatosGrafica(nodoActualId);
+                }
+            }, tiempoActualizacion);
         }
     };
 
@@ -1025,12 +1555,171 @@
     // INICIALIZACIÓN
     // ============================================
     document.addEventListener("DOMContentLoaded", () => {
-        window.cargarNodos();
-        window.cargarServiciosHTTP();
-        window.cargarPredicciones();
-        nodosInterval = setInterval(window.cargarNodos, tiempoActualizacion);
-        setInterval(window.cargarServiciosHTTP, tiempoActualizacion);
-        setInterval(window.cargarPredicciones, 60000);
+        // Cargar datos iniciales (Nodos visible por defecto)
+        window.cargarNodos(1);
+        window.cargarServiciosHTTP(1);
+        window.cargarPredicciones(1);
+        
+        // Actualizar contadores de pestañas
+        actualizarContadores();
+        
+        // Intervalos independientes
+        nodosInterval = setInterval(() => {
+            if (!modalAbierto && tabActual === 'nodos') {
+                window.cargarNodos(estadoNodos.paginaActual);
+            }
+        }, tiempoActualizacion);
+        
+        serviciosInterval = setInterval(() => {
+            if (!modalAbierto && tabActual === 'servicios') {
+                window.cargarServiciosHTTP(estadoServicios.paginaActual);
+            }
+        }, tiempoActualizacion);
+        
+        // Predicciones cada 60 segundos (fijo)
+        prediccionesInterval = setInterval(() => {
+            if (!modalAbierto && tabActual === 'predicciones') {
+                window.cargarPredicciones(estadoPredicciones.paginaActual);
+            }
+        }, 60000);
     });
+
+    // ============================================
+    // ACTUALIZAR CONTADORES DE PESTAÑAS
+    // ============================================
+    function actualizarContadores() {
+        // Nodos
+        fetch(apiUrl)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('countNodos').textContent = data.length;
+            })
+            .catch(err => console.error('Error al obtener contador de nodos:', err));
+        
+        // Servicios
+        fetch(httpApiUrl)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('countServicios').textContent = data.length;
+            })
+            .catch(err => console.error('Error al obtener contador de servicios:', err));
+        
+        // Predicciones
+        fetch('/api/nodes/predictions/')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('countPredicciones').textContent = data.length;
+            })
+            .catch(err => console.error('Error al obtener contador de predicciones:', err));
+    }
+
+    // ============================================
+    // FILTRO - NODOS DE RED
+    // ============================================
+    window.filtrarNodos = function() {
+        const termino = document.getElementById('filterNodos').value.toLowerCase().trim();
+        const container = document.getElementById('nodos-container');
+        const tarjetas = container.querySelectorAll('.nodo-card');
+        let visibleCount = 0;
+        
+        tarjetas.forEach(tarjeta => {
+            const nombre = tarjeta.dataset.nombre ? tarjeta.dataset.nombre.toLowerCase() : '';
+            const ip = tarjeta.dataset.ip ? tarjeta.dataset.ip.toLowerCase() : '';
+            const coincide = nombre.includes(termino) || ip.includes(termino);
+            
+            tarjeta.style.display = coincide ? '' : 'none';
+            if (coincide) visibleCount++;
+        });
+        
+        // Mostrar estado del filtro
+        const statusEl = document.getElementById('filterStatusNodos');
+        const clearBtn = document.getElementById('clearFilterNodos');
+        
+        if (termino) {
+            statusEl.textContent = `(${visibleCount} coincidencias)`;
+            clearBtn.classList.remove('hidden');
+        } else {
+            statusEl.textContent = '';
+            clearBtn.classList.add('hidden');
+        }
+    };
+
+    window.limpiarFiltroNodos = function() {
+        document.getElementById('filterNodos').value = '';
+        window.filtrarNodos();
+    };
+
+    // ============================================
+    // FILTRO - SERVICIOS WEB
+    // ============================================
+    window.filtrarServicios = function() {
+        const termino = document.getElementById('filterServicios').value.toLowerCase().trim();
+        const container = document.getElementById('http-container');
+        const tarjetas = container.querySelectorAll('.servicio-card');
+        let visibleCount = 0;
+        
+        tarjetas.forEach(tarjeta => {
+            const nombre = tarjeta.dataset.nombre ? tarjeta.dataset.nombre.toLowerCase() : '';
+            const url = tarjeta.dataset.url ? tarjeta.dataset.url.toLowerCase() : '';
+            const tipo = tarjeta.dataset.tipo ? tarjeta.dataset.tipo.toLowerCase() : '';
+            const coincide = nombre.includes(termino) || url.includes(termino) || tipo.includes(termino);
+            
+            tarjeta.style.display = coincide ? '' : 'none';
+            if (coincide) visibleCount++;
+        });
+        
+        const statusEl = document.getElementById('filterStatusServicios');
+        const clearBtn = document.getElementById('clearFilterServicios');
+        
+        if (termino) {
+            statusEl.textContent = `(${visibleCount} coincidencias)`;
+            clearBtn.classList.remove('hidden');
+        } else {
+            statusEl.textContent = '';
+            clearBtn.classList.add('hidden');
+        }
+    };
+
+    window.limpiarFiltroServicios = function() {
+        document.getElementById('filterServicios').value = '';
+        window.filtrarServicios();
+    };
+
+    // ============================================
+    // FILTRO - PREDICCIONES
+    // ============================================
+    window.filtrarPredicciones = function() {
+        const termino = document.getElementById('filterPredicciones').value.toLowerCase().trim();
+        const container = document.getElementById('predictions-container');
+        const tarjetas = container.querySelectorAll('.prediccion-card');
+        let visibleCount = 0;
+        
+        tarjetas.forEach(tarjeta => {
+            const nombre = tarjeta.dataset.nombre ? tarjeta.dataset.nombre.toLowerCase() : '';
+            const mensaje = tarjeta.dataset.mensaje ? tarjeta.dataset.mensaje.toLowerCase() : '';
+            const tipo = tarjeta.dataset.tipo ? tarjeta.dataset.tipo.toLowerCase() : '';
+            const coincide = nombre.includes(termino) || mensaje.includes(termino) || tipo.includes(termino);
+            
+            tarjeta.style.display = coincide ? '' : 'none';
+            if (coincide) visibleCount++;
+        });
+        
+        const statusEl = document.getElementById('filterStatusPredicciones');
+        const clearBtn = document.getElementById('clearFilterPredicciones');
+        
+        if (termino) {
+            statusEl.textContent = `(${visibleCount} coincidencias)`;
+            clearBtn.classList.remove('hidden');
+        } else {
+            statusEl.textContent = '';
+            clearBtn.classList.add('hidden');
+        }
+    };
+
+    window.limpiarFiltroPredicciones = function() {
+        document.getElementById('filterPredicciones').value = '';
+        window.filtrarPredicciones();
+    };
+
 </script>
 {% endblock %}
