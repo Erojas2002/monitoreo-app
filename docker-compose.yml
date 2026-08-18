@@ -3,7 +3,7 @@ version: '3.8'
 
 services:
   # ============================================
-  # REDIS (Broker para Celery)
+  # REDIS
   # ============================================
   redis:
     image: redis:alpine
@@ -20,15 +20,15 @@ services:
       retries: 5
 
   # ============================================
-  # BASE DE DATOS POSTGRESQL
+  # BASE DE DATOS
   # ============================================
   db:
     image: postgres:15-alpine
     container_name: monitoreo_db
     environment:
-      - POSTGRES_DB=monitoreo_db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=erick297
+      - POSTGRES_DB=${DB_NAME:-monitoreo_db}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
@@ -37,7 +37,7 @@ services:
     networks:
       - monitoreo_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d monitoreo_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-monitoreo_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -53,14 +53,16 @@ services:
       - "8000:8000"
     environment:
       - DJANGO_SETTINGS_MODULE=monitoreo_proyecto.settings
-      - DB_NAME=monitoreo_db
-      - DB_USER=postgres
-      - DB_PASSWORD=erick297
+      - DB_NAME=${DB_NAME:-monitoreo_db}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - DB_HOST=db
       - DB_PORT=5432
       - REDIS_URL=redis://redis:6379/0
-      - DJANGO_SECRET_KEY=django-insecure-s602-_jyy8$%(^xazf_58qpg!tmy*#&vlg2hv4pd@4syklz12l
-      - DEBUG=1
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-clave-por-defecto}
+      - DEBUG=${DEBUG:-1}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}
+      - DOCKER_ENV=1
       - PYTHONUNBUFFERED=1
     volumes:
       - .:/app
@@ -83,14 +85,16 @@ services:
     command: celery -A monitoreo_proyecto worker --loglevel=info --concurrency=4
     environment:
       - DJANGO_SETTINGS_MODULE=monitoreo_proyecto.settings
-      - DB_NAME=monitoreo_db
-      - DB_USER=postgres
-      - DB_PASSWORD=erick297
+      - DB_NAME=${DB_NAME:-monitoreo_db}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - DB_HOST=db
       - DB_PORT=5432
       - REDIS_URL=redis://redis:6379/0
-      - DJANGO_SECRET_KEY=django-insecure-s602-_jyy8$%(^xazf_58qpg!tmy*#&vlg2hv4pd@4syklz12l
-      - DEBUG=1
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-clave-por-defecto}
+      - DEBUG=${DEBUG:-1}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}
+      - DOCKER_ENV=1
       - PYTHONUNBUFFERED=1
     volumes:
       - .:/app
@@ -112,14 +116,16 @@ services:
     command: celery -A monitoreo_proyecto beat --loglevel=info
     environment:
       - DJANGO_SETTINGS_MODULE=monitoreo_proyecto.settings
-      - DB_NAME=monitoreo_db
-      - DB_USER=postgres
-      - DB_PASSWORD=erick297
+      - DB_NAME=${DB_NAME:-monitoreo_db}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - DB_HOST=db
       - DB_PORT=5432
       - REDIS_URL=redis://redis:6379/0
-      - DJANGO_SECRET_KEY=django-insecure-s602-_jyy8$%(^xazf_58qpg!tmy*#&vlg2hv4pd@4syklz12l
-      - DEBUG=1
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-clave-por-defecto}
+      - DEBUG=${DEBUG:-1}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}
+      - DOCKER_ENV=1
       - PYTHONUNBUFFERED=1
     volumes:
       - .:/app
@@ -132,16 +138,10 @@ services:
     networks:
       - monitoreo_network
 
-# ============================================
-# VOLUMENES
-# ============================================
 volumes:
   postgres_data:
   static_volume:
 
-# ============================================
-# REDES
-# ============================================
 networks:
   monitoreo_network:
     driver: bridge
