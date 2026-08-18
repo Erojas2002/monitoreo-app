@@ -1,5 +1,0 @@
-Para levantar el contenedor de docker: docker compose up -d
-
-celery -A monitoreo_proyecto worker -l INFO --pool=solo
-
-celery -A monitoreo_proyecto beat -l INFO

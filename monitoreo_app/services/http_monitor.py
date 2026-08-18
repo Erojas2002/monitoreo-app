@@ -196,7 +196,7 @@ def handle_http_error(endpoint, status_code, response_time):
     
     error_desc = error_messages.get(status_code, f"Error HTTP {status_code}")
     
-    # 📱 NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
+    #  NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
     if should_notify:
         telegram_notifier.send_alert_sync(
             title=f"🌐 ERROR HTTP {status_code}",
@@ -259,7 +259,7 @@ def handle_http_status_change(endpoint, nuevo_estado, response_time=None, error=
         AlertEvent.objects.create(node=None, event_type='HTTP_DOWN', message=mensaje)
         print(f"[ALERTA HTTP] {mensaje}")
         
-        # 📱 NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
+        #  NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
         if should_notify:
             error_msg = f"\nError: {error}" if error else ""
             telegram_notifier.send_alert_sync(
@@ -293,7 +293,7 @@ def handle_http_status_change(endpoint, nuevo_estado, response_time=None, error=
         AlertEvent.objects.create(node=None, event_type='HTTP_RECOVERY', message=mensaje)
         print(f"[RECOVERY HTTP] {mensaje}")
         
-        # 📱 NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
+        # NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
         if should_notify:
             status_info = f"Código: {status_code}" if status_code else ""
             telegram_notifier.send_alert_sync(
@@ -318,7 +318,7 @@ def handle_http_status_change(endpoint, nuevo_estado, response_time=None, error=
         AlertEvent.objects.create(node=None, event_type='HTTP_SLOW', message=mensaje)
         print(f"[ADVERTENCIA HTTP] {mensaje}")
         
-        # 📱 NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
+        #  NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
         if should_notify:
             telegram_notifier.send_alert_sync(
                 title="⚠️ SERVICIO LENTO",

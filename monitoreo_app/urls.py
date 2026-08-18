@@ -9,7 +9,9 @@ from .views import (
     LatencyLogViewSet, 
     AlertEventViewSet,
     HTTPEndpointViewSet,
-    ReportViewSet
+    ReportViewSet,
+    settings_view,
+    test_telegram
 )
 
 # El router de DRF crea automáticamente las URLs para los ViewSets
@@ -29,4 +31,7 @@ urlpatterns = [
         path('pdf/', ReportViewSet.as_view({'get': 'pdf'}), name='report_pdf'),
         path('excel/', ReportViewSet.as_view({'get': 'excel'}), name='report_excel'),
     ])),
+    path('settings/', settings_view, name='settings'),
+        path('api/test-telegram/', test_telegram, name='test-telegram'),
+
 ]

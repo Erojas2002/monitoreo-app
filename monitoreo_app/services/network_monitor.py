@@ -4,7 +4,7 @@ from monitoreo_app.models import NetworkNode, LatencyLog, AlertEvent
 from django.utils import timezone
 from django.conf import settings
 import time
-from .telegram_service import telegram_notifier
+from .telegram_service import get_telegram_notifier  # CAMBIADO
 
 def check_all_nodes():
     nodos_activos = NetworkNode.objects.filter(is_monitored=True)
@@ -76,6 +76,9 @@ def handle_status_change(nodo, nuevo_estado):
     # Verificar si debe notificar por Telegram
     should_notify = getattr(nodo, 'notify_telegram', True)
     
+    # Obtener el notificador con la configuración actual
+    telegram_notifier = get_telegram_notifier()  # CAMBIADO
+    
     if nuevo_estado == 'DOWN':
         nodo.down_since = current_time
         nodo.save(update_fields=['down_since'])
@@ -84,7 +87,7 @@ def handle_status_change(nodo, nuevo_estado):
         AlertEvent.objects.create(node=nodo, event_type='NODE_DOWN', message=mensaje)
         print(f"[ALERTA] {mensaje}")
         
-        # 📱 NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
+        #  NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
         if should_notify and getattr(settings, 'ALERT_SETTINGS', {}).get('NOTIFY_ON_DOWN', True):
             telegram_notifier.send_alert_sync(
                 title="🚨 NODO CAÍDO",
@@ -121,7 +124,7 @@ def handle_status_change(nodo, nuevo_estado):
             alerta.save()
         print(f"[RECOVERY] {mensaje}")
         
-        # 📱 NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
+        #  NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
         if should_notify and getattr(settings, 'ALERT_SETTINGS', {}).get('NOTIFY_ON_RECOVERY', True):
             telegram_notifier.send_alert_sync(
                 title="✅ NODO RECUPERADO",
@@ -143,7 +146,7 @@ def handle_status_change(nodo, nuevo_estado):
         AlertEvent.objects.create(node=nodo, event_type='HIGH_LATENCY', message=mensaje)
         print(f"[ADVERTENCIA] {mensaje}")
         
-        # 📱 NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
+        #  NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
         if should_notify and getattr(settings, 'ALERT_SETTINGS', {}).get('NOTIFY_ON_WARN', True):
             last_log = nodo.latency_logs.first()
             packet_loss = last_log.packet_loss_pct if last_log else 0

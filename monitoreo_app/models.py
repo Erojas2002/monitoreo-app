@@ -85,10 +85,6 @@ class LatencyLog(models.Model):
     packet_loss_pct = models.FloatField(default=0.0, verbose_name="% Pérdida de Paquetes")
     is_online = models.BooleanField(default=False)
 
-    # ELIMINAMOS CAMPOS DE TRÁFICO SNMP
-    # inbound_mbps - ELIMINADO
-    # outbound_mbps - ELIMINADO
-
     class Meta:
         ordering = ['-timestamp']
         verbose_name = "Registro de Latencia"
@@ -183,3 +179,30 @@ class HTTPLog(models.Model):
     def __str__(self):
         estado = "Online" if self.is_online else "Offline"
         return f"{self.endpoint.name} - {estado} a las {self.timestamp.strftime('%H:%M:%S')}"
+
+class AppSettings(models.Model):
+    """Configuraciones de la aplicación"""
+    
+    telegram_bot_token = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Token del Bot de Telegram",
+        help_text="Token que te proporciona @BotFather"
+    )
+    telegram_chat_id = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name="ID del Chat de Telegram",
+        help_text="ID del chat donde se enviarán las notificaciones"
+    )
+    
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Última actualización")
+    
+    class Meta:
+        verbose_name = "Configuración de la App"
+        verbose_name_plural = "Configuraciones de la App"
+    
+    def __str__(self):
+        return f"Configuración - Actualizado: {self.updated_at.strftime('%d/%m/%Y %H:%M')}"

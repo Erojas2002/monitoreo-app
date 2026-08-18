@@ -1,0 +1,217 @@
+<!-- monitoreo_app/templates/monitoreo_app/settings.html -->
+{% extends 'monitoreo_app/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- ============================================ -->
+<!-- ENCABEZADO -->
+<!-- ============================================ -->
+<div class="glass-panel rounded-2xl p-6 mb-8 border border-blue-500/20">
+    <div class="flex flex-wrap justify-between items-center gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-white">
+                <i class="fa-solid fa-sliders text-blue-400 mr-2"></i>Ajustes del Sistema
+            </h2>
+            <p class="text-sm text-gray-400 mt-1">
+                Configura las notificaciones y preferencias del sistema
+            </p>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="text-xs px-3 py-1 bg-green-500/20 text-green-400 rounded-full border border-green-500/30">
+                <i class="fa-solid fa-circle text-[6px] mr-1 align-middle"></i>
+                Configuración activa
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MENSAJES DE NOTIFICACIÓN -->
+<!-- ============================================ -->
+{% if messages %}
+    <div class="mb-6">
+        {% for message in messages %}
+            <div class="glass-panel p-4 rounded-xl border 
+                {% if message.tags == 'success' %}border-green-500/50 bg-green-500/10{% endif %}
+                {% if message.tags == 'error' %}border-red-500/50 bg-red-500/10{% endif %}
+                {% if message.tags == 'warning' %}border-yellow-500/50 bg-yellow-500/10{% endif %}
+                {% if message.tags == 'info' %}border-blue-500/50 bg-blue-500/10{% endif %}">
+                <p class="text-sm">{{ message }}</p>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<!-- ============================================ -->
+<!-- FORMULARIO DE AJUSTES -->
+<!-- ============================================ -->
+<div class="glass-panel p-6 rounded-xl border border-gray-700/50">
+    <div class="flex items-center gap-3 mb-6">
+        <div class="p-2 bg-blue-500/10 rounded-lg">
+            <i class="fa-brands fa-telegram text-blue-400 text-xl"></i>
+        </div>
+        <div>
+            <h3 class="text-lg font-semibold text-white">Notificaciones por Telegram</h3>
+            <p class="text-xs text-gray-400">Configura tu bot de Telegram para recibir alertas</p>
+        </div>
+    </div>
+    
+    <form method="POST" action="{% url 'settings' %}">
+        {% csrf_token %}
+        
+        <!-- Token del Bot - Oculto si está configurado -->
+        <div class="mb-4">
+            <label class="block text-sm text-gray-400 mb-1.5 font-semibold">
+                <i class="fa-solid fa-key mr-1"></i> Token del Bot
+            </label>
+            
+            {% if settings.telegram_bot_token %}
+                <div class="flex items-center gap-3 bg-gray-800/50 border border-gray-600 rounded-lg p-2.5" id="token_mostrado">
+                    <span class="text-sm font-mono text-green-400">
+                        ••••••••••••••••••••••••••••••
+                    </span>
+                    <span class="text-xs text-green-400/70 bg-green-500/10 px-2 py-0.5 rounded-full">
+                        <i class="fa-solid fa-check-circle mr-1"></i> Configurado
+                    </span>
+                    <button type="button" 
+                            onclick="window.mostrarCampo('token')" 
+                            class="text-xs text-blue-400 hover:text-blue-300 transition-colors ml-auto">
+                        <i class="fa-solid fa-eye"></i> Mostrar
+                    </button>
+                </div>
+                <div class="hidden flex items-center gap-3 bg-gray-800/50 border border-gray-600 rounded-lg p-2.5" id="token_visible">
+                    <input type="text" 
+                           id="telegram_bot_token" 
+                           name="telegram_bot_token" 
+                           value="{{ settings.telegram_bot_token }}" 
+                           class="flex-1 bg-gray-800 text-white border-0 focus:ring-0 focus:outline-none text-sm font-mono">
+                    <button type="button" 
+                            onclick="window.ocultarCampo('token')" 
+                            class="text-xs text-gray-400 hover:text-white transition-colors">
+                        <i class="fa-solid fa-eye-slash"></i> Ocultar
+                    </button>
+                </div>
+            {% else %}
+                <input type="text" 
+                       id="telegram_bot_token" 
+                       name="telegram_bot_token" 
+                       value="" 
+                       placeholder="Ej: 1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
+                       class="w-full bg-gray-800 text-white border border-gray-600 rounded-lg p-2.5 focus:border-blue-500 focus:outline-none transition-colors text-sm font-mono">
+            {% endif %}
+            
+            <p class="text-xs text-gray-500 mt-1">
+                <i class="fa-solid fa-info-circle mr-1"></i>
+                Token que te proporciona <a href="https://t.me/BotFather" target="_blank" class="text-blue-400 hover:underline">@BotFather</a> en Telegram
+            </p>
+        </div>
+        
+        <!-- ID del Chat - Oculto si está configurado -->
+        <div class="mb-6">
+            <label class="block text-sm text-gray-400 mb-1.5 font-semibold">
+                <i class="fa-solid fa-hashtag mr-1"></i> ID del Chat
+            </label>
+            
+            {% if settings.telegram_chat_id %}
+                <div class="flex items-center gap-3 bg-gray-800/50 border border-gray-600 rounded-lg p-2.5" id="chat_mostrado">
+                    <span class="text-sm font-mono text-green-400">
+                        ••••••••••••••••••••••••••••••
+                    </span>
+                    <span class="text-xs text-green-400/70 bg-green-500/10 px-2 py-0.5 rounded-full">
+                        <i class="fa-solid fa-check-circle mr-1"></i> Configurado
+                    </span>
+                    <button type="button" 
+                            onclick="window.mostrarCampo('chat')" 
+                            class="text-xs text-blue-400 hover:text-blue-300 transition-colors ml-auto">
+                        <i class="fa-solid fa-eye"></i> Mostrar
+                    </button>
+                </div>
+                <div class="hidden flex items-center gap-3 bg-gray-800/50 border border-gray-600 rounded-lg p-2.5" id="chat_visible">
+                    <input type="text" 
+                           id="telegram_chat_id" 
+                           name="telegram_chat_id" 
+                           value="{{ settings.telegram_chat_id }}" 
+                           class="flex-1 bg-gray-800 text-white border-0 focus:ring-0 focus:outline-none text-sm font-mono">
+                    <button type="button" 
+                            onclick="window.ocultarCampo('chat')" 
+                            class="text-xs text-gray-400 hover:text-white transition-colors">
+                        <i class="fa-solid fa-eye-slash"></i> Ocultar
+                    </button>
+                </div>
+            {% else %}
+                <input type="text" 
+                       id="telegram_chat_id" 
+                       name="telegram_chat_id" 
+                       value="" 
+                       placeholder="Ej: 123456789"
+                       class="w-full bg-gray-800 text-white border border-gray-600 rounded-lg p-2.5 focus:border-blue-500 focus:outline-none transition-colors text-sm font-mono">
+            {% endif %}
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-4 pt-4 border-t border-gray-700/50">
+            <button type="submit" 
+                    class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-lg text-sm transition-all hover:scale-105 flex items-center gap-2">
+                <i class="fa-solid fa-save"></i> Guardar Configuración
+            </button>
+            
+            {% if settings.telegram_bot_token and settings.telegram_chat_id %}
+                <button type="button" 
+                        onclick="window.enviarPrueba()" 
+                        class="bg-green-600 hover:bg-green-500 text-white px-6 py-2.5 rounded-lg text-sm transition-all hover:scale-105 flex items-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i> Enviar Mensaje de Prueba
+                </button>
+            {% endif %}
+            
+            <a href="/" 
+               class="text-gray-400 hover:text-white text-sm transition-colors">
+                <i class="fa-solid fa-arrow-left mr-1"></i> Volver al Dashboard
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- ============================================ -->
+<!-- INFORMACIÓN DE ESTADO -->
+<!-- ============================================ -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+    <div class="glass-panel p-4 rounded-xl border border-gray-700/50">
+        <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Estado de Telegram</p>
+        <div class="mt-2 flex items-center gap-2">
+            {% if settings.telegram_bot_token and settings.telegram_chat_id %}
+                <span class="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                <span class="text-sm text-green-400">✅ Configurado</span>
+            {% else %}
+                <span class="inline-block w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+                <span class="text-sm text-yellow-400">⚠️ No configurado</span>
+            {% endif %}
+        </div>
+        <p class="text-xs text-gray-500 mt-1">
+            {% if settings.telegram_bot_token and settings.telegram_chat_id %}
+                Las notificaciones se enviarán a Telegram
+            {% else %}
+                Configura el token y chat ID para activar las notificaciones
+            {% endif %}
+        </p>
+    </div>
+    
+    <div class="glass-panel p-4 rounded-xl border border-gray-700/50">
+        <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Última actualización</p>
+        <p class="text-sm text-white mt-2">
+            {% if settings.updated_at %}
+                {{ settings.updated_at|date:"d/m/Y H:i:s" }}
+            {% else %}
+                Nunca
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+{% endblock %}
+
+<!-- ============================================ -->
+<!-- SCRIPTS -->
+<!-- ============================================ -->
+{% block scripts %}
+<script src="{% static 'monitoreo_app/js/settings.js' %}"></script>
+{% endblock %}

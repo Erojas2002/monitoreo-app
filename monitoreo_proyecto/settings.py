@@ -122,7 +122,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Si estás en desarrollo, asegúrate de tener esto
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'monitoreo_app/static'),
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -153,8 +159,8 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 # Telegram Configuration
-TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '8732129786:AAEdPx_ITsGR0Sv6PQyOFLT1UR6OfviH13M')  # Tu token
-TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '5972121745')      # Tu chat_id
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')  # Tu token
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')      # Tu chat_id
 
 # Configuración de alertas
 ALERT_SETTINGS = {

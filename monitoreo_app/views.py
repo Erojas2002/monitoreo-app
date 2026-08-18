@@ -21,6 +21,13 @@ from rest_framework.response import Response
 from django.db.models import Q
 from django.utils import timezone
 from .services.prediction_service import predict_node_failures, get_node_health_score
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .models import AppSettings
+from .services.telegram_service import telegram_notifier
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .services.telegram_service import TelegramNotifier
 
 class NetworkNodeViewSet(viewsets.ModelViewSet):
     queryset = NetworkNode.objects.all()
@@ -210,3 +217,59 @@ class ReportViewSet(viewsets.ViewSet):
     def excel(self, request):
         buffer = generate_excel_report()
         return FileResponse(buffer, as_attachment=True, filename='reporte_monitoreo.xlsx')
+
+def settings_view(request):
+    settings_obj, created = AppSettings.objects.get_or_create(id=1)
+    
+    if request.method == 'POST':
+        telegram_token = request.POST.get('telegram_bot_token', '').strip()
+        telegram_chat_id = request.POST.get('telegram_chat_id', '').strip()
+        
+        # Si los campos están vacíos pero ya había configuración, mantenerla
+        if not telegram_token and settings_obj.telegram_bot_token:
+            telegram_token = settings_obj.telegram_bot_token
+        if not telegram_chat_id and settings_obj.telegram_chat_id:
+            telegram_chat_id = settings_obj.telegram_chat_id
+        
+        # Validar que no estén vacíos
+        if not telegram_token or not telegram_chat_id:
+            messages.error(request, '❌ Ambos campos son obligatorios')
+            return render(request, 'monitoreo_app/settings.html', {'settings': settings_obj})
+        
+        # Guardar en la base de datos
+        settings_obj.telegram_bot_token = telegram_token
+        settings_obj.telegram_chat_id = telegram_chat_id
+        settings_obj.save()
+        
+        # Reconfigurar el servicio de Telegram
+        from .services.telegram_service import TelegramNotifier, get_telegram_notifier
+        global telegram_notifier
+        telegram_notifier = TelegramNotifier(token=telegram_token, chat_id=telegram_chat_id)
+        
+        # Enviar mensaje de prueba
+        success = telegram_notifier.send_sync("✅ Configuración de Telegram actualizada correctamente")
+        
+        if success:
+            messages.success(request, '✅ Configuración guardada y mensaje de prueba enviado a Telegram')
+        else:
+            messages.warning(request, '⚠️ Configuración guardada pero no se pudo enviar el mensaje de prueba. Verifica el token y chat ID.')
+        
+        return redirect('settings')
+    
+    return render(request, 'monitoreo_app/settings.html', {'settings': settings_obj})
+
+@api_view(['POST'])
+def test_telegram(request):
+    token = request.data.get('token')
+    chat_id = request.data.get('chat_id')
+    
+    if not token or not chat_id:
+        return Response({'success': False, 'message': 'Faltan token o chat_id'}, status=400)
+    
+    notifier = TelegramNotifier(token=token, chat_id=chat_id)
+    success = notifier.send_sync("Mensaje de prueba desde el Centro de Monitoreo")
+    
+    if success:
+        return Response({'success': True, 'message': 'Mensaje enviado'})
+    else:
+        return Response({'success': False, 'message': 'Error al enviar mensaje'}, status=500)

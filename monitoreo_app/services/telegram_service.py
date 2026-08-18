@@ -7,15 +7,17 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+# Variable global para la instancia
+_telegram_notifier = None
+
 class TelegramNotifier:
     def __init__(self, token: Optional[str] = None, chat_id: Optional[str] = None):
-        self.token = token or getattr(settings, 'TELEGRAM_BOT_TOKEN', None)
-        self.chat_id = chat_id or getattr(settings, 'TELEGRAM_CHAT_ID', None)
+        self.token = token
+        self.chat_id = chat_id
+        self.bot = None
+        self.enabled = False
         
-        if not self.token or not self.chat_id:
-            logger.warning("Telegram no configurado: Faltan token o chat_id")
-            self.enabled = False
-        else:
+        if self.token and self.chat_id:
             self.bot = Bot(token=self.token)
             self.enabled = True
     
@@ -73,24 +75,27 @@ class TelegramNotifier:
             logger.error(f"Error en send_alert_sync: {e}")
             return False
 
-# Singleton para usar en toda la app
-telegram_notifier = TelegramNotifier()
-
-# monitoreo_app/services/telegram_service.py
-from django.utils import timezone
-
-def format_datetime(dt):
-    """Formatea fecha/hora con zona horaria local"""
-    if not dt:
-        return "N/A"
+def get_telegram_notifier():
+    """Obtiene o crea la instancia del notificador con la configuración actual"""
+    global _telegram_notifier
     
-    # Asegurar que la fecha tenga zona horaria
-    if timezone.is_naive(dt):
-        dt = timezone.make_aware(dt)
+    try:
+        from monitoreo_app.models import AppSettings
+        settings_obj = AppSettings.objects.first()
+        if settings_obj and settings_obj.telegram_bot_token and settings_obj.telegram_chat_id:
+            _telegram_notifier = TelegramNotifier(
+                token=settings_obj.telegram_bot_token,
+                chat_id=settings_obj.telegram_chat_id
+            )
+            return _telegram_notifier
+    except:
+        pass
     
-    # Formatear en hora local
-    local_dt = dt.astimezone(timezone.get_current_timezone())
-    return local_dt.strftime('%d/%m/%Y %I:%M:%S %p')
+    # Fallback a variables de entorno
+    token = getattr(settings, 'TELEGRAM_BOT_TOKEN', None)
+    chat_id = getattr(settings, 'TELEGRAM_CHAT_ID', None)
+    _telegram_notifier = TelegramNotifier(token=token, chat_id=chat_id)
+    return _telegram_notifier
 
-# Ejemplo de uso en las alertas:
-# f"⏰ Hora caída: <b>{format_datetime(current_time)}</b>"
+# Para mantener compatibilidad con código existente
+telegram_notifier = get_telegram_notifier()
