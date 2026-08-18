@@ -51,8 +51,18 @@
         <div class="p-2 bg-blue-500/10 rounded-lg">
             <i class="fa-brands fa-telegram text-blue-400 text-xl"></i>
         </div>
-        <div>
-            <h3 class="text-lg font-semibold text-white">Notificaciones por Telegram</h3>
+        <div class="flex-1">
+            <div class="flex items-center gap-2">
+                <h3 class="text-lg font-semibold text-white">Notificaciones por Telegram</h3>
+                <!-- BOTÓN DE AYUDA -->
+                <button onclick="window.abrirAyudaTelegram()" 
+                        class="text-gray-400 hover:text-blue-400 transition-colors group relative">
+                    <i class="fa-regular fa-circle-question text-xl"></i>
+                    <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        Click aquí para ver cómo crear un bot con BotFather
+                    </span>
+                </button>
+            </div>
             <p class="text-xs text-gray-400">Configura tu bot de Telegram para recibir alertas</p>
         </div>
     </div>
@@ -169,6 +179,205 @@
             </a>
         </div>
     </form>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL DE AYUDA PARA TELEGRAM -->
+<!-- ============================================ -->
+<div id="ayudaTelegramModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden justify-center items-center z-50">
+    <div class="glass-panel p-6 rounded-2xl w-11/12 max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar relative border border-blue-500/20">
+        
+        <!-- Encabezado del modal -->
+        <div class="flex justify-between items-center mb-6 sticky top-0 bg-[#0f172a]/90 pb-4 border-b border-gray-700">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-blue-500/10 rounded-lg">
+                    <i class="fa-brands fa-telegram text-blue-400 text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-white">Cómo crear un bot en Telegram</h3>
+                    <p class="text-xs text-gray-400">Sigue estos pasos para configurar tu bot y obtener las credenciales</p>
+                </div>
+            </div>
+            <button onclick="window.cerrarAyudaTelegram()" 
+                    class="text-gray-400 hover:text-red-400 bg-gray-800/50 hover:bg-gray-800 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- Contenido del modal - Pasos -->
+        <div class="space-y-6">
+            
+            <!-- PASO 1 -->
+            <div class="glass-panel p-4 rounded-xl border border-gray-700/50">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0 w-8 h-8 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center font-bold text-sm">1</div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-semibold text-white">Buscar a BotFather en Telegram</h4>
+                        <p class="text-xs text-gray-400 mt-1">
+                            Abre Telegram y busca <span class="text-blue-400 font-mono">@BotFather</span> en el buscador. 
+                            Asegúrate de que sea el usuario verificado (tiene un check azul).
+                        </p>
+                        <div class="mt-2 bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                            <p class="text-xs text-gray-400">
+                                <i class="fa-solid fa-magnifying-glass mr-1 text-blue-400"></i>
+                                En el buscador escribe: <span class="text-white font-mono">@BotFather</span>
+                            </p>
+                            <div class="mt-2 bg-gray-900/50 rounded-lg p-2 text-center">
+                                <img src="{% static 'monitoreo_app/images/telegram_paso1.png' %}" 
+                                     alt="Búsqueda de BotFather en Telegram" 
+                                     class="rounded-lg mx-auto max-h-64 object-contain border border-gray-700/50"
+                                     onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'text-gray-500 text-xs p-4\'><i class=\'fa-regular fa-image text-2xl block mb-2\'></i>Captura de pantalla: Búsqueda de BotFather<br><span class=\'text-gray-600\'>telegram_paso1.png</span></div>'">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PASO 2 -->
+            <div class="glass-panel p-4 rounded-xl border border-gray-700/50">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0 w-8 h-8 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center font-bold text-sm">2</div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-semibold text-white">Crear el nuevo bot</h4>
+                        <p class="text-xs text-gray-400 mt-1">
+                            En el chat con BotFather, envía los siguientes comandos:
+                        </p>
+                        <div class="mt-2 space-y-2">
+                            <div class="bg-gray-900/50 rounded-lg p-2.5 border border-gray-700/50">
+                                <span class="text-xs text-gray-400">1. Escribe:</span>
+                                <code class="block text-sm font-mono text-yellow-400 mt-0.5">/start</code>
+                            </div>
+                            <div class="bg-gray-900/50 rounded-lg p-2.5 border border-gray-700/50">
+                                <span class="text-xs text-gray-400">2. Luego escribe:</span>
+                                <code class="block text-sm font-mono text-yellow-400 mt-0.5">/newbot</code>
+                            </div>
+                            <div class="bg-gray-900/50 rounded-lg p-2.5 border border-gray-700/50">
+                                <span class="text-xs text-gray-400">3. Sigue las instrucciones:</span>
+                                <ul class="text-xs text-gray-400 mt-1 space-y-1 list-disc list-inside">
+                                    <li>Escribe el <span class="text-white">nombre</span> de tu bot (ej: Mi NMS Bot)</li>
+                                    <li>Escribe el <span class="text-white">username</span> (debe terminar en <span class="text-yellow-400">bot</span>, ej: mi_nms_bot)</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-2 bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                            <p class="text-xs text-gray-400">
+                                <i class="fa-solid fa-check-circle mr-1 text-green-400"></i>
+                                BotFather te dará un mensaje de éxito con el <span class="text-yellow-400">HTTP API Token</span>
+                            </p>
+                            <div class="mt-2 bg-gray-900/50 rounded-lg p-2 text-center">
+                                <img src="{% static 'monitoreo_app/images/telegram_paso2.png' %}" 
+                                     alt="Creación del bot con BotFather" 
+                                     class="rounded-lg mx-auto max-h-64 object-contain border border-gray-700/50"
+                                     onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'text-gray-500 text-xs p-4\'><i class=\'fa-regular fa-image text-2xl block mb-2\'></i>Captura de pantalla: Creación del bot<br><span class=\'text-gray-600\'>telegram_paso2.png</span></div>'">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PASO 3 -->
+            <div class="glass-panel p-4 rounded-xl border border-gray-700/50">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0 w-8 h-8 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center font-bold text-sm">3</div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-semibold text-white">Obtener el Token y Chat ID</h4>
+                        <p class="text-xs text-gray-400 mt-1">
+                            Copia el <span class="text-yellow-400">HTTP API</span> que te dio BotFather y sigue estos pasos:
+                        </p>
+                        <div class="mt-2 space-y-3">
+                            <div class="bg-gray-900/50 rounded-lg p-2.5 border border-gray-700/50">
+                                <span class="text-xs text-gray-400">1. Copia el token:</span>
+                                <code class="block text-sm font-mono text-yellow-400 mt-0.5 break-all">
+                                    1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
+                                </code>
+                            </div>
+                            <div class="bg-gray-900/50 rounded-lg p-2.5 border border-gray-700/50">
+                                <span class="text-xs text-gray-400">2. Ingresa al link con tu token:</span>
+                                <code class="block text-sm font-mono text-blue-400 mt-0.5 break-all">
+                                    https://api.telegram.org/bot&lt;TU_TOKEN&gt;/getUpdates
+                                </code>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    <i class="fa-solid fa-arrow-right mr-1 text-blue-400"></i>
+                                    Reemplaza <span class="text-yellow-400">&lt;TU_TOKEN&gt;</span> con el token que copiaste
+                                </p>
+                            </div>
+                            <div class="bg-gray-900/50 rounded-lg p-2.5 border border-gray-700/50">
+                                <span class="text-xs text-gray-400">3. Envía un mensaje a tu bot:</span>
+                                <ul class="text-xs text-gray-400 mt-1 space-y-1 list-disc list-inside">
+                                    <li>BotFather te dará un link a tu bot (ej: <span class="text-blue-400">t.me/tu_bot</span>)</li>
+                                    <li>Haz clic en ese link y envía cualquier mensaje (ej: <span class="text-white">"Hola"</span>)</li>
+                                </ul>
+                            </div>
+                            <div class="bg-gray-900/50 rounded-lg p-2.5 border border-gray-700/50">
+                                <span class="text-xs text-gray-400">4. Actualiza la página del paso 2 y busca el "id":</span>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    En la respuesta JSON, busca <span class="text-yellow-400">"id"</span> dentro de <span class="text-blue-400">"chat"</span>.
+                                    Ese es tu <span class="text-white">Chat ID</span>.
+                                </p>
+                                <div class="mt-1 bg-gray-800/50 rounded p-2">
+                                    <code class="text-xs font-mono text-green-400">
+                                        {"ok":true,"result":[{"update_id":123,<br>
+                                        &nbsp;&nbsp;"message":{"message_id":1,<br>
+                                        &nbsp;&nbsp;&nbsp;&nbsp;"chat":{"<span class="text-yellow-400">id</span>":<span class="text-white">123456789</span>,...}}}]}
+                                    </code>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2 bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+                            <p class="text-xs text-gray-400">
+                                <i class="fa-solid fa-lightbulb mr-1 text-yellow-400"></i>
+                                <span class="text-white">Tip:</span> También puedes usar <span class="text-blue-400">@getmyid_bot</span> para obtener tu Chat ID más fácilmente.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PASO 4 -->
+            <div class="glass-panel p-4 rounded-xl border border-gray-700/50">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0 w-8 h-8 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center font-bold text-sm">4</div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-semibold text-white">Configurar en el sistema</h4>
+                        <p class="text-xs text-gray-400 mt-1">
+                            Una vez tengas el Token y el Chat ID, colócalos en los campos correspondientes:
+                        </p>
+                        <div class="mt-2 space-y-2">
+                            <div class="bg-gray-900/50 rounded-lg p-2.5 border border-gray-700/50">
+                                <span class="text-xs text-gray-400">Token del Bot:</span>
+                                <code class="block text-sm font-mono text-yellow-400 mt-0.5 break-all">
+                                    {token_copiado}
+                                </code>
+                            </div>
+                            <div class="bg-gray-900/50 rounded-lg p-2.5 border border-gray-700/50">
+                                <span class="text-xs text-gray-400">ID del Chat:</span>
+                                <code class="block text-sm font-mono text-yellow-400 mt-0.5">
+                                    {chat_id_copiado}
+                                </code>
+                            </div>
+                        </div>
+                        <div class="mt-3 bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+                            <p class="text-xs text-green-400">
+                                <i class="fa-solid fa-check-circle mr-1"></i>
+                                Haz clic en <span class="text-white font-semibold">"Guardar Configuración"</span> 
+                                y recibirás un mensaje de confirmación en Telegram.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Pie del modal -->
+        <div class="mt-6 pt-4 border-t border-gray-700 flex justify-end">
+            <button onclick="window.cerrarAyudaTelegram()" 
+                    class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg text-sm transition-colors">
+                <i class="fa-solid fa-check mr-1"></i> Entendido
+            </button>
+        </div>
+        
+    </div>
 </div>
 
 <!-- ============================================ -->

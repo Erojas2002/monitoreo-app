@@ -1,9 +1,147 @@
+# docker-compose.yml
 version: '3.8'
 
 services:
+  # ============================================
+  # REDIS (Broker para Celery)
+  # ============================================
   redis:
     image: redis:alpine
     container_name: monitoreo_redis
     ports:
       - "6379:6379"
     restart: unless-stopped
+    networks:
+      - monitoreo_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # BASE DE DATOS POSTGRESQL
+  # ============================================
+  db:
+    image: postgres:15-alpine
+    container_name: monitoreo_db
+    environment:
+      - POSTGRES_DB=monitoreo_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=erick297
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - monitoreo_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d monitoreo_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # DJANGO WEB
+  # ============================================
+  web:
+    build: .
+    container_name: monitoreo_web
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=monitoreo_proyecto.settings
+      - DB_NAME=monitoreo_db
+      - DB_USER=postgres
+      - DB_PASSWORD=erick297
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SECRET_KEY=django-insecure-s602-_jyy8$%(^xazf_58qpg!tmy*#&vlg2hv4pd@4syklz12l
+      - DEBUG=1
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - monitoreo_network
+
+  # ============================================
+  # CELERY WORKER
+  # ============================================
+  celery_worker:
+    build: .
+    container_name: monitoreo_celery_worker
+    command: celery -A monitoreo_proyecto worker --loglevel=info --concurrency=4
+    environment:
+      - DJANGO_SETTINGS_MODULE=monitoreo_proyecto.settings
+      - DB_NAME=monitoreo_db
+      - DB_USER=postgres
+      - DB_PASSWORD=erick297
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SECRET_KEY=django-insecure-s602-_jyy8$%(^xazf_58qpg!tmy*#&vlg2hv4pd@4syklz12l
+      - DEBUG=1
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - monitoreo_network
+
+  # ============================================
+  # CELERY BEAT
+  # ============================================
+  celery_beat:
+    build: .
+    container_name: monitoreo_celery_beat
+    command: celery -A monitoreo_proyecto beat --loglevel=info
+    environment:
+      - DJANGO_SETTINGS_MODULE=monitoreo_proyecto.settings
+      - DB_NAME=monitoreo_db
+      - DB_USER=postgres
+      - DB_PASSWORD=erick297
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SECRET_KEY=django-insecure-s602-_jyy8$%(^xazf_58qpg!tmy*#&vlg2hv4pd@4syklz12l
+      - DEBUG=1
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - monitoreo_network
+
+# ============================================
+# VOLUMENES
+# ============================================
+volumes:
+  postgres_data:
+  static_volume:
+
+# ============================================
+# REDES
+# ============================================
+networks:
+  monitoreo_network:
+    driver: bridge
