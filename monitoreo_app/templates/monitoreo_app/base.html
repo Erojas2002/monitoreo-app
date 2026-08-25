@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Estilos personalizados -->
     {% load static %}
-    <link rel="stylesheet" href="{% static 'monitoreo_app/css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'monitoreo_app/css/styles.css' %}?v=2">
     
     <style>
         /* Estilos adicionales específicos del template si son necesarios */
@@ -30,7 +30,7 @@
             </h1>
             <div class="flex items-center gap-6">
                 <a href="/" class="text-gray-300 hover:text-white transition-colors">
-                    <i class="fa-solid fa-gauge-high mr-1"></i> Dashboard
+                    <i class="fa-solid fa-gauge-high mr-1"></i> Panel
                 </a>
                 <a href="/alerts/" class="text-gray-300 hover:text-white transition-colors">
                     <i class="fa-solid fa-bell mr-1"></i> Alertas
