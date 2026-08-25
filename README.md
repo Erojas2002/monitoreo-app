@@ -7,9 +7,7 @@
 - PostgreSQL 15+
 - Redis 7+
 
-## 📥 Instalación Rápida
-
-### Opción 1: Con Docker (Recomendado)
+## 📥 Instalación Rápida Con Docker 
 
 ```bash
 # 1. Clonar el repositorio

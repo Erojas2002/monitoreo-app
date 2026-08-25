@@ -120,7 +120,8 @@ Sistema de Gestión de Red (NMS) desarrollado para monitorear el estado, la late
 TIME_ZONE = 'America/Caracas'
 USE_TZ = True
 
-# Telegram (fallback si no hay configuración en BD)
+### Telegram (fallback si no hay configuración en BD)
+
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
 
@@ -136,7 +137,7 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-Funciones Más Importantes del Sistema
+###Funciones Más Importantes del Sistema
 Backend - Servicios
 network_monitor.py
 
@@ -276,6 +277,7 @@ docker-compose logs -f
 
 # 6. Detener contenedores
 docker-compose down
+
 Sin Docker (Desarrollo Local)
 bash
 # 1. Crear entorno virtual
