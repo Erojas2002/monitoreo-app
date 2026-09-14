@@ -31,3 +31,8 @@ celerybeat-schedule-wal
 
 # Docker
 .venv/
+
+# Celery Beat
+celerybeat-schedule
+celerybeat-schedule-shm
+celerybeat-schedule-wal
