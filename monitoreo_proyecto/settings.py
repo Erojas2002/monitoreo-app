@@ -2,7 +2,10 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
 # ============================================
 # SEGURIDAD
@@ -97,6 +100,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'monitoreo_app.middleware.ActiveUserMiddleware',
 ]
 
 ROOT_URLCONF = 'monitoreo_proyecto.urls'
@@ -137,3 +141,17 @@ STATICFILES_DIRS = [
 ]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ============================================
+# AUTENTICACIÓN
+# ============================================
+# URL a la que redirige después del logout
+LOGOUT_REDIRECT_URL = '/login/'
+
+# URL de login
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+
+# Duración de la sesión (en segundos) - 1 semana
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
+SESSION_SAVE_EVERY_REQUEST = True

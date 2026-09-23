@@ -1,0 +1,141 @@
+<!-- monitoreo_app/templates/monitoreo_app/login.html -->
+{% extends 'monitoreo_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center py-8">
+    <div class="glass-panel p-8 rounded-2xl w-full max-w-md border border-blue-500/20 relative overflow-hidden">
+        
+        <!-- Decoración de fondo -->
+        <div class="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-20 -left-20 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl"></div>
+        
+        <div class="relative">
+            <!-- Logo y título -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-500/10 rounded-2xl mb-4 border border-blue-500/20">
+                    <i class="fa-solid fa-network-wired text-blue-400 text-3xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-white">Centro de Monitoreo</h1>
+                <p class="text-sm text-gray-400 mt-1">Inicia sesión para continuar</p>
+            </div>
+            
+            <!-- Mensajes de error -->
+            {% if form.errors %}
+                <div class="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <p class="text-sm text-red-400 flex items-center gap-2">
+                        <i class="fa-solid fa-exclamation-circle"></i>
+                        Usuario o contraseña incorrectos
+                    </p>
+                </div>
+            {% endif %}
+            
+            {% if next %}
+                {% if user.is_authenticated %}
+                    <div class="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                        <p class="text-sm text-yellow-400 flex items-center gap-2">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            No tienes permiso para acceder a esa página
+                        </p>
+                    </div>
+                {% else %}
+                    <div class="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                        <p class="text-sm text-blue-400 flex items-center gap-2">
+                            <i class="fa-solid fa-info-circle"></i>
+                            Inicia sesión para acceder a esa página
+                        </p>
+                    </div>
+                {% endif %}
+            {% endif %}
+            
+            <!-- Formulario -->
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <label class="block text-sm text-gray-400 mb-2 font-semibold">
+                        <i class="fa-solid fa-user mr-1"></i> Usuario
+                    </label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3 top-3 text-gray-500 text-sm"></i>
+                        <input type="text" 
+                               name="username" 
+                               id="id_username"
+                               required 
+                               autofocus
+                               autocomplete="username"
+                               class="w-full bg-gray-800 text-white border border-gray-600 rounded-lg pl-10 pr-4 py-2.5 focus:border-blue-500 focus:outline-none transition-colors"
+                               placeholder="Tu nombre de usuario">
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm text-gray-400 mb-2 font-semibold">
+                        <i class="fa-solid fa-lock mr-1"></i> Contraseña
+                    </label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3 top-3 text-gray-500 text-sm"></i>
+                        <input type="password" 
+                               name="password" 
+                               id="id_password"
+                               required
+                               autocomplete="current-password"
+                               class="w-full bg-gray-800 text-white border border-gray-600 rounded-lg pl-10 pr-10 py-2.5 focus:border-blue-500 focus:outline-none transition-colors"
+                               placeholder="••••••••">
+                        <button type="button" 
+                                onclick="window.togglePassword()" 
+                                class="absolute right-3 top-3 text-gray-500 hover:text-white transition-colors">
+                            <i id="togglePasswordIcon" class="fa-solid fa-eye text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <input type="hidden" name="next" value="{{ next }}">
+                
+                <button type="submit" 
+                        class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg transition-all hover:scale-[1.02] flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i> 
+                    Iniciar Sesión
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toggle de contraseña
+window.togglePassword = function() {
+    const passwordInput = document.getElementById('id_password');
+    const icon = document.getElementById('togglePasswordIcon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+};
+
+// Enter para enviar
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const inputs = form.querySelectorAll('input:not([type="hidden"])');
+    
+    inputs.forEach((input, index) => {
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                } else {
+                    form.submit();
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

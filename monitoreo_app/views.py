@@ -1,6 +1,6 @@
 # monitoreo_app/views.py
 from rest_framework import viewsets
-from .models import NetworkNode, VirtualHost, Container, LatencyLog, AlertEvent, HTTPEndpoint, HTTPLog
+from .models import NetworkNode, VirtualHost, Container, LatencyLog, AlertEvent, HTTPEndpoint, HTTPLog, UserProfile
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .serializers import (
@@ -28,10 +28,59 @@ from .services.telegram_service import telegram_notifier
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .services.telegram_service import TelegramNotifier
+from .serializers import UserProfileSerializer
+from django.contrib.auth.decorators import login_required
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
+from .decorators import admin_required
+from rest_framework.permissions import BasePermission
+
+class IsAdminUser(BasePermission):
+    """Permiso personalizado: solo administradores"""
+    
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        
+        return (
+            request.user.is_superuser or 
+            request.user.is_staff or
+            (hasattr(request.user, 'profile') and request.user.profile.role == 'ADMIN')
+        )
+
+class IsOperatorOrAdmin(BasePermission):
+    """Permiso: operadores y administradores"""
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return (
+            request.user.is_superuser or 
+            request.user.is_staff or
+            (hasattr(request.user, 'profile') and request.user.profile.role in ['ADMIN', 'OPERATOR'])
+        )
+
+
+class IsAdminOrReadOnly(BasePermission):
+    """Permiso: solo admin puede modificar, todos pueden leer"""
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        
+        # Si es solo lectura, permitir a todos
+        if request.method in ['GET', 'HEAD', 'OPTIONS']:
+            return True
+        
+        # Si es modificación, solo admin
+        return (
+            request.user.is_superuser or 
+            request.user.is_staff or
+            (hasattr(request.user, 'profile') and request.user.profile.role == 'ADMIN')
+        )
 
 class NetworkNodeViewSet(viewsets.ModelViewSet):
     queryset = NetworkNode.objects.all()
     serializer_class = NetworkNodeSerializer
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
 
     #Endpoint personalizado para las gráficas
     @action(detail=True, methods=['get'])
@@ -97,19 +146,23 @@ class NetworkNodeViewSet(viewsets.ModelViewSet):
 class VirtualHostViewSet(viewsets.ModelViewSet):
     queryset = VirtualHost.objects.all()
     serializer_class = VirtualHostSerializer
+    permission_classes = [IsAuthenticated]
 
 class ContainerViewSet(viewsets.ModelViewSet):
     queryset = Container.objects.all()
     serializer_class = ContainerSerializer
+    permission_classes = [IsAuthenticated]
 
 class LatencyLogViewSet(viewsets.ReadOnlyModelViewSet):
     # Usamos ReadOnly porque el frontend solo debe leer los logs, no crearlos ni editarlos
     queryset = LatencyLog.objects.all()
     serializer_class = LatencyLogSerializer
+    permission_classes = [IsAuthenticated]
 
 class AlertEventViewSet(viewsets.ModelViewSet):
     queryset = AlertEvent.objects.all()
     serializer_class = AlertEventSerializer
+    permission_classes = [IsAuthenticated, IsOperatorOrAdmin]
     
     @action(detail=False, methods=['get'])
     def filter(self, request):
@@ -206,8 +259,10 @@ class AlertEventViewSet(viewsets.ModelViewSet):
 class HTTPEndpointViewSet(viewsets.ModelViewSet):
     queryset = HTTPEndpoint.objects.all()
     serializer_class = HTTPEndpointSerializer
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
 
 class ReportViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
     @action(detail=False, methods=['get'])
     def pdf(self, request):
         buffer = generate_nodes_report_pdf()
@@ -218,6 +273,8 @@ class ReportViewSet(viewsets.ViewSet):
         buffer = generate_excel_report()
         return FileResponse(buffer, as_attachment=True, filename='reporte_monitoreo.xlsx')
 
+@login_required
+@admin_required
 def settings_view(request):
     settings_obj, created = AppSettings.objects.get_or_create(id=1)
     
@@ -258,7 +315,10 @@ def settings_view(request):
     
     return render(request, 'monitoreo_app/settings.html', {'settings': settings_obj})
 
+
+
 @api_view(['POST'])
+@permission_classes([IsAuthenticated, IsAdminUser])
 def test_telegram(request):
     token = request.data.get('token')
     chat_id = request.data.get('chat_id')
@@ -272,4 +332,112 @@ def test_telegram(request):
     if success:
         return Response({'success': True, 'message': 'Mensaje enviado'})
     else:
+        return Response({'success': False, 'message': 'Error al enviar mensaje'}, status=500)
+
+class UserProfileViewSet(viewsets.ModelViewSet):
+    queryset = UserProfile.objects.all().select_related('user')
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def destroy(self, request, *args, **kwargs):
+        """Elimina el perfil y el usuario asociado"""
+        profile = self.get_object()
+        
+        # Validación: no permitir auto-eliminación
+        if profile.user == request.user:
+            return Response(
+                {'error': 'No puedes eliminarte a ti mismo'},
+                status=400
+            )
+        
+        # La señal post_delete se encarga de eliminar el User automáticamente
+        profile.delete()
+        
+        return Response(status=204)
+    
+    @action(detail=False, methods=['get'])
+    def me(self, request):
+        """Obtiene el perfil del usuario logueado"""
+        try:
+            profile = request.user.profile
+            serializer = self.get_serializer(profile)
+            return Response(serializer.data)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'Perfil no encontrado'}, status=404)
+    
+    @action(detail=False, methods=['put', 'patch'])
+    def update_me(self, request):
+        """Actualiza el perfil del usuario logueado (solo campos de Telegram)"""
+        try:
+            profile = request.user.profile
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'Perfil no encontrado'}, status=404)
+        
+        # Solo permitir actualizar campos de Telegram y preferencias
+        allowed_fields = [
+            'telegram_bot_token', 'telegram_chat_id',
+            'notify_node_down', 'notify_node_recovery',
+            'notify_http_down', 'notify_http_recovery',
+            'notify_ssl_expiry', 'notify_high_latency',
+        ]
+        
+        data = {k: v for k, v in request.data.items() if k in allowed_fields}
+        
+        # Limpiar campos vacíos
+        if data.get('telegram_bot_token') == '':
+            data['telegram_bot_token'] = None
+        if data.get('telegram_chat_id') == '':
+            data['telegram_chat_id'] = None
+        
+        serializer = self.get_serializer(profile, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+    
+    @action(detail=False, methods=['post'])
+    def test_my_telegram(self, request):
+        """Envía mensaje de prueba al Telegram del usuario logueado"""
+        try:
+            profile = request.user.profile
+        except UserProfile.DoesNotExist:
+            return Response({'success': False, 'message': 'Perfil no encontrado'}, status=404)
+        
+        if not profile.has_telegram_configured:
+            return Response({
+                'success': False,
+                'message': 'No tienes configurado Telegram. Guarda primero tu Token y Chat ID.'
+            }, status=400)
+        
+        from .services.telegram_service import TelegramNotifier
+        notifier = TelegramNotifier(
+            token=profile.telegram_bot_token,
+            chat_id=profile.telegram_chat_id
+        )
+        success = notifier.send_sync(f"🧪 Mensaje de prueba para {profile.user.username}")
+        
+        if success:
+            return Response({'success': True, 'message': 'Mensaje enviado correctamente'})
+        return Response({'success': False, 'message': 'Error al enviar mensaje'}, status=500)
+    
+    @action(detail=True, methods=['post'])
+    def test_telegram(self, request, pk=None):
+        """Envía un mensaje de prueba al Telegram de un usuario específico (admin)"""
+        profile = self.get_object()
+        
+        if not profile.has_telegram_configured:
+            return Response({
+                'success': False,
+                'message': 'El usuario no tiene configurado Telegram'
+            }, status=400)
+        
+        from .services.telegram_service import TelegramNotifier
+        notifier = TelegramNotifier(
+            token=profile.telegram_bot_token,
+            chat_id=profile.telegram_chat_id
+        )
+        success = notifier.send_sync(f"🧪 Mensaje de prueba para {profile.user.username}")
+        
+        if success:
+            return Response({'success': True, 'message': 'Mensaje enviado correctamente'})
         return Response({'success': False, 'message': 'Error al enviar mensaje'}, status=500)
