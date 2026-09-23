@@ -6,7 +6,7 @@ import datetime
 from django.utils import timezone
 from django.conf import settings
 from monitoreo_app.models import HTTPEndpoint, HTTPLog, AlertEvent
-from .telegram_service import telegram_notifier
+from .telegram_service import send_alert_to_all, telegram_notifier
 
 # Códigos HTTP que deben generar alerta
 HTTP_ERROR_CODES = [400, 401, 403, 404, 405, 408, 500, 501, 502, 503, 504, 505]
@@ -19,7 +19,6 @@ def check_ssl_expiry(endpoint):
     
     days_left = (endpoint.ssl_expiry_date - timezone.now()).days
     
-    # Umbrales de alerta
     if days_left <= 7 and days_left > 0:
         severity = 'critical'
         title = f"🔴 SSL por expirar en {days_left} días"
@@ -29,31 +28,28 @@ def check_ssl_expiry(endpoint):
         title = f"🟡 SSL expira en {days_left} días"
         message = f"Servicio: <b>{endpoint.name}</b>\nURL: <code>{endpoint.url}</code>\nℹ️ El certificado SSL expira en {days_left} días."
     else:
-        return  # No alertar si faltan más de 30 días
+        return
     
-    # Evitar spam: solo alertar si no se ha enviado antes
     alert_key = f"ssl_{endpoint.id}"
     last_alert = getattr(check_ssl_expiry, 'last_alerts', {})
     
     if alert_key in last_alert:
         last_time = last_alert[alert_key]
-        if (timezone.now() - last_time).days < 1:  # No repetir en menos de 24h
+        if (timezone.now() - last_time).days < 1:
             return
     
-    # Guardar última alerta
     if not hasattr(check_ssl_expiry, 'last_alerts'):
         check_ssl_expiry.last_alerts = {}
     check_ssl_expiry.last_alerts[alert_key] = timezone.now()
     
-    # Enviar alerta por Telegram
     if endpoint.notify_telegram:
-        telegram_notifier.send_alert_sync(
+        send_alert_to_all(
             title=title,
             message=message,
-            severity=severity
+            severity=severity,
+            event_type="SSL_EXPIRY"
         )
     
-    # Guardar en AlertEvent
     AlertEvent.objects.create(
         node=None,
         event_type='SSL_EXPIRY',
@@ -176,7 +172,6 @@ def check_http_endpoint(endpoint):
 
 def handle_http_error(endpoint, status_code, response_time):
     """Maneja códigos de error HTTP específicos"""
-    # Verificar si debe notificar por Telegram
     should_notify = getattr(endpoint, 'notify_telegram', True)
     
     error_messages = {
@@ -196,21 +191,18 @@ def handle_http_error(endpoint, status_code, response_time):
     
     error_desc = error_messages.get(status_code, f"Error HTTP {status_code}")
     
-    #  NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
     if should_notify:
-        telegram_notifier.send_alert_sync(
+        send_alert_to_all(
             title=f"🌐 ERROR HTTP {status_code}",
             message=f"Servicio: <b>{endpoint.name}</b>\n"
                     f"URL: <code>{endpoint.url}</code>\n"
                     f"Estado: <b>{status_code} - {error_desc}</b>\n"
                     f"Tiempo respuesta: {response_time:.0f}ms\n\n"
                     f"⚠️ El servicio respondió con un error HTTP.",
-            severity="critical"
+            severity="critical",
+            event_type="HTTP_ERROR"
         )
-    else:
-        print(f"[INFO] Notificaciones Telegram deshabilitadas para {endpoint.name}")
     
-    # Siempre crear evento en la base de datos
     AlertEvent.objects.create(
         node=None,
         event_type=f'HTTP_ERROR_{status_code}',
@@ -245,10 +237,9 @@ def format_datetime(dt):
 
 # En handle_http_status_change:
 def handle_http_status_change(endpoint, nuevo_estado, response_time=None, error=None, status_code=None):
+    """Maneja cambios de estado en endpoints HTTP"""
     estado_anterior = endpoint.status
     current_time = timezone.now()
-    
-    # Verificar si debe notificar por Telegram
     should_notify = getattr(endpoint, 'notify_telegram', True)
     
     if nuevo_estado == 'DOWN':
@@ -259,20 +250,18 @@ def handle_http_status_change(endpoint, nuevo_estado, response_time=None, error=
         AlertEvent.objects.create(node=None, event_type='HTTP_DOWN', message=mensaje)
         print(f"[ALERTA HTTP] {mensaje}")
         
-        #  NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
         if should_notify:
             error_msg = f"\nError: {error}" if error else ""
-            telegram_notifier.send_alert_sync(
+            send_alert_to_all(
                 title="🌐 SERVICIO CAÍDO",
                 message=f"Servicio: <b>{endpoint.name}</b>\n"
                         f"URL: <code>{endpoint.url}</code>\n"
                         f"⏰ Hora caída: <b>{format_datetime(current_time)}</b>\n"
                         f"Error: {error or 'Sin respuesta'}{error_msg}\n\n"
                         f"⚠️ El servicio HTTP no está respondiendo.",
-                severity="critical"
+                severity="critical",
+                event_type="HTTP_DOWN"
             )
-        else:
-            print(f"[INFO] Notificaciones Telegram deshabilitadas para {endpoint.name}")
         
     elif nuevo_estado == 'UP' and estado_anterior == 'DOWN':
         down_since = getattr(endpoint, 'down_since', None)
@@ -293,10 +282,9 @@ def handle_http_status_change(endpoint, nuevo_estado, response_time=None, error=
         AlertEvent.objects.create(node=None, event_type='HTTP_RECOVERY', message=mensaje)
         print(f"[RECOVERY HTTP] {mensaje}")
         
-        # NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
         if should_notify:
             status_info = f"Código: {status_code}" if status_code else ""
-            telegram_notifier.send_alert_sync(
+            send_alert_to_all(
                 title="✅ SERVICIO RECUPERADO",
                 message=f"Servicio: <b>{endpoint.name}</b>\n"
                         f"URL: <code>{endpoint.url}</code>\n"
@@ -305,10 +293,9 @@ def handle_http_status_change(endpoint, nuevo_estado, response_time=None, error=
                         f"📊 Tiempo respuesta: {response_time:.0f}ms\n"
                         f"{status_info}\n\n"
                         f"✅ El servicio está nuevamente en línea.",
-                severity="success"
+                severity="success",
+                event_type="HTTP_RECOVERY"
             )
-        else:
-            print(f"[INFO] Notificaciones Telegram deshabilitadas para {endpoint.name}")
         
         endpoint.down_since = None
         endpoint.save(update_fields=['down_since'])
@@ -318,19 +305,17 @@ def handle_http_status_change(endpoint, nuevo_estado, response_time=None, error=
         AlertEvent.objects.create(node=None, event_type='HTTP_SLOW', message=mensaje)
         print(f"[ADVERTENCIA HTTP] {mensaje}")
         
-        #  NOTIFICACIÓN TELEGRAM (SOLO SI notify_telegram = True)
         if should_notify:
-            telegram_notifier.send_alert_sync(
+            send_alert_to_all(
                 title="⚠️ SERVICIO LENTO",
                 message=f"Servicio: <b>{endpoint.name}</b>\n"
                         f"URL: <code>{endpoint.url}</code>\n"
                         f"⏰ Hora: {format_datetime(current_time)}\n"
                         f"⏱️ Tiempo respuesta: <b>{response_time:.0f}ms</b>\n\n"
                         f"⚠️ El servicio está respondiendo pero con lentitud.",
-                severity="warning"
+                severity="warning",
+                event_type="HTTP_DOWN"
             )
-        else:
-            print(f"[INFO] Notificaciones Telegram deshabilitadas para {endpoint.name}")
 
 def check_all_http_endpoints():
     """Verifica todos los endpoints HTTP activos"""

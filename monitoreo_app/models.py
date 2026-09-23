@@ -1,5 +1,9 @@
 # monitoreo_app/models.py
 from django.db import models
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.db.models.signals import post_delete
 
 class NetworkNode(models.Model):
     DEVICE_TYPES = [
@@ -206,3 +210,77 @@ class AppSettings(models.Model):
     
     def __str__(self):
         return f"Configuración - Actualizado: {self.updated_at.strftime('%d/%m/%Y %H:%M')}"
+
+class UserProfile(models.Model):
+    """Perfil de usuario con configuración de Telegram individual"""
+    
+    ROLE_CHOICES = [
+        ('ADMIN', 'Administrador'),
+        ('OPERATOR', 'Operador'),
+        ('VIEWER', 'Solo Lectura'),
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='VIEWER')
+    
+    # Configuración de Telegram individual
+    telegram_bot_token = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Token del Bot de Telegram",
+        help_text="Token del bot para este usuario"
+    )
+    telegram_chat_id = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name="ID del Chat de Telegram",
+        help_text="ID del chat para este usuario"
+    )
+    
+    # Preferencias de notificación
+    notify_node_down = models.BooleanField(default=True, verbose_name="Notificar cuando un nodo cae")
+    notify_node_recovery = models.BooleanField(default=True, verbose_name="Notificar cuando un nodo se recupera")
+    notify_http_down = models.BooleanField(default=True, verbose_name="Notificar cuando un servicio cae")
+    notify_http_recovery = models.BooleanField(default=True, verbose_name="Notificar cuando un servicio se recupera")
+    notify_ssl_expiry = models.BooleanField(default=True, verbose_name="Notificar SSL por expirar")
+    notify_high_latency = models.BooleanField(default=True, verbose_name="Notificar latencia alta")
+    
+    is_active = models.BooleanField(default=True, verbose_name="Activo")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.user.username} ({self.get_role_display()})"
+    
+    @property
+    def has_telegram_configured(self):
+        return bool(self.telegram_bot_token and self.telegram_chat_id)
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """Crea automáticamente un perfil cuando se crea un usuario"""
+    if created:
+        UserProfile.objects.create(
+            user=instance,
+            role='ADMIN' if instance.is_superuser else 'VIEWER'
+        )
+
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    """Guarda el perfil cuando se guarda el usuario"""
+    if hasattr(instance, 'profile'):
+        instance.profile.save()
+
+@receiver(post_delete, sender=UserProfile)
+def delete_user_when_profile_deleted(sender, instance, **kwargs):
+    """Elimina el User cuando se elimina su UserProfile"""
+    try:
+        if instance.user_id:
+            # Usar _default_manager para evitar problemas si el User ya no existe
+            User.objects.filter(id=instance.user_id).delete()
+    except Exception as e:
+        print(f"Error eliminando usuario: {e}")
